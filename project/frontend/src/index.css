@@ -1,0 +1,234 @@
+@import "tailwindcss";
+
+/* ------------------------------------------------------------------------
+ * GiveTap design tokens - the light/dark base palettes below mirror
+ * `.task/GiveTap Kit.dc.html` exactly; dark + the two high-contrast
+ * combinations extend the same brand identity for run 2 (D1).
+ * Two independent axes: [data-theme="light"|"dark"] (base palette) x
+ * [data-contrast="high"] (optional AAA overrides) = 4 combinations, all on
+ * <html>. Text scaling via [data-textsize] on <html> (rem-based, 16/18/20px
+ * root).
+ * ---------------------------------------------------------------------- */
+
+:root,
+[data-theme="light"] {
+  --surface: #fbfbfc;
+  --surface-raised: #ffffff;
+  --surface-sunken: #f4f4f6;
+  --border: #e6e6e9;
+  --border-strong: #cfcfd4;
+  --fg: #1a1a1c;
+  --fg-muted: #6b6b72;
+  --brand: #0e8c7a;
+  --brand-fg: #ffffff;
+  --accent: #0b6857;
+  --positive: #188a5e;
+  --warning: #b4780f;
+  --danger: #c43d3d;
+  --live: #0e8c7a;
+  --focus: #0e8c7a;
+}
+
+/* Dark theme - same brand identity, brightened for legibility on a near-black surface. */
+[data-theme="dark"] {
+  --surface: #14181a;
+  --surface-raised: #1c2124;
+  --surface-sunken: #0e1113;
+  --border: #2a3033;
+  --border-strong: #3d454a;
+  --fg: #f2f3f4;
+  --fg-muted: #a3acb0;
+  --brand: #2bb79e;
+  --brand-fg: #06211c;
+  --accent: #45cbb0;
+  --positive: #3ecb8e;
+  --warning: #e0a83f;
+  --danger: #ef6b6b;
+  --live: #2bb79e;
+  --focus: #5fd9c4;
+}
+
+/* High-contrast, light base - AAA text, black borders/fg, icon + label states only. Two
+   attribute selectors give this a higher specificity than the base [data-theme="light"] rule
+   above, so it composes correctly regardless of declaration order. */
+[data-theme="light"][data-contrast="high"] {
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-sunken: #ffffff;
+  --border: #333333;
+  --border-strong: #000000;
+  --fg: #000000;
+  --fg-muted: #26262a;
+  --brand: #0a5e52;
+  --brand-fg: #ffffff;
+  --accent: #0a5e52;
+  --positive: #0a6e46;
+  --warning: #7a4e00;
+  --danger: #9e1b1b;
+  --live: #0a5e52;
+  --focus: #0a34c8;
+}
+
+/* High-contrast, dark base - AAA text, pure-black surfaces, white borders/fg. */
+[data-theme="dark"][data-contrast="high"] {
+  --surface: #000000;
+  --surface-raised: #000000;
+  --surface-sunken: #000000;
+  --border: #4d4d4d;
+  --border-strong: #ffffff;
+  --fg: #ffffff;
+  --fg-muted: #d9d9d9;
+  --brand: #35e0c0;
+  --brand-fg: #000000;
+  --accent: #35e0c0;
+  --positive: #3fe08a;
+  --warning: #ffcf5c;
+  --danger: #ff6b6b;
+  --live: #35e0c0;
+  --focus: #7fdfff;
+}
+
+:root {
+  --sans: "Hanken Grotesk", system-ui, sans-serif;
+  --display: "Geist", system-ui, sans-serif;
+  --mono: "Geist Mono", ui-monospace, monospace;
+
+  --fs-display: 2.5rem;
+  --fs-h1: 1.75rem;
+  --fs-h2: 1.3rem;
+  --fs-h3: 1.05rem;
+  --fs-body: 0.9375rem;
+  --fs-sm: 0.8125rem;
+  --fs-label: 0.6875rem;
+  --fs-mono: 0.875rem;
+
+  --r-sm: 6px;
+  --r-md: 9px;
+  --r-lg: 12px;
+  --r-full: 999px;
+
+  --e1: 0 1px 2px rgba(20, 20, 25, 0.05), 0 1px 3px rgba(20, 20, 25, 0.06);
+  --e2: 0 8px 24px -12px rgba(20, 20, 25, 0.18);
+  --e3: 0 24px 60px -30px rgba(20, 20, 25, 0.3);
+}
+
+/* Dark surfaces need a lighter (not darker) shadow to read as elevated against a near-black
+   background - pure-black shadows are invisible there. */
+[data-theme="dark"] {
+  --e1: 0 1px 2px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.35);
+  --e2: 0 8px 24px -12px rgba(0, 0, 0, 0.55);
+  --e3: 0 24px 60px -30px rgba(0, 0, 0, 0.7);
+}
+
+/* Text scaling - rem-based, applied to the root so every `rem` unit scales. */
+html {
+  font-size: 16px;
+}
+html[data-textsize="112"] {
+  font-size: 18px;
+}
+html[data-textsize="125"] {
+  font-size: 20px;
+}
+
+/* Tailwind v4 theme mapping - utilities (bg-surface-raised, text-fg-muted, …)
+ * resolve to the CSS variables above, so theme/text-size swaps need no JS
+ * beyond toggling the <html> attributes. */
+@theme {
+  --font-sans: var(--sans);
+  --font-display: var(--display);
+  --font-mono: var(--mono);
+
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-brand: var(--brand);
+  --color-brand-fg: var(--brand-fg);
+  --color-accent: var(--accent);
+  --color-positive: var(--positive);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-live: var(--live);
+  --color-focus: var(--focus);
+
+  /* Reuses Tailwind's native radius utility names (rounded-sm/md/lg/full). */
+  --radius-sm: var(--r-sm);
+  --radius-md: var(--r-md);
+  --radius-lg: var(--r-lg);
+  --radius-full: var(--r-full);
+
+  --shadow-e1: var(--e1);
+  --shadow-e2: var(--e2);
+  --shadow-e3: var(--e3);
+
+  --text-display: var(--fs-display);
+  --text-h1: var(--fs-h1);
+  --text-h2: var(--fs-h2);
+  --text-h3: var(--fs-h3);
+  --text-body: var(--fs-body);
+  --text-label: var(--fs-label);
+  --text-fs-sm: var(--fs-sm);
+  --text-mono: var(--fs-mono);
+}
+
+body {
+  background: var(--color-surface);
+  color: var(--color-fg);
+  font-family: var(--font-sans);
+}
+
+/* Focus rings always visible, never suppressed - a11y floor. */
+:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+@keyframes gt-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  70% {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes gt-shimmer {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: 400px 0;
+  }
+}
+
+/* Skeleton shimmer - used by shared/ui/skeleton/Skeleton.tsx. */
+.gt-skeleton {
+  background-image: linear-gradient(
+    90deg,
+    var(--color-surface-sunken) 0px,
+    color-mix(in srgb, var(--color-surface-sunken) 40%, var(--color-border)) 40px,
+    var(--color-surface-sunken) 80px
+  );
+  background-size: 400px 100%;
+  animation: gt-shimmer 1.3s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

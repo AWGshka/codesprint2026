@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1782698719165,
+      "tag": "0000_silly_killer_shrike",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1782956001236,
+      "tag": "0001_curvy_junta",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1782991834098,
+      "tag": "0002_dashing_molly_hayes",
+      "breakpoints": true
+    }
+  ]
+}
