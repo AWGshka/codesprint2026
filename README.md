@@ -1,4 +1,6 @@
-# GiveTap
+[OUTDATED] TO BE UPDATED
+
+# GiveTap -
 
 Contactless charitable giving prototype — a public **donor app** (branded
 per-campaign donation flow) and a role-based **admin console** (campaigns,
@@ -20,7 +22,7 @@ project/
 - **Separation of concerns**: the frontend never touches the database — every
   read/write goes through the backend's `/api/*` REST surface, wrapped in a
   single response envelope (`{ data }` on success, `{ error: { code,
-  message, details? } }` on failure).
+message, details? } }` on failure).
 - **Auth/RBAC**: Better Auth `username` + `admin` plugins. Three roles —
   `viewer` (read-only), `manager` (campaigns + exports + reconciliation),
   `admin` (everything + user/role management). Enforced both in the UI
@@ -64,11 +66,11 @@ To start over from a clean database: stop the backend, delete
 
 Username + password login (email is only an account key, not used to log in).
 
-| Username | Password | Role | Can do |
-|---|---|---|---|
-| `viewer` | `demo1234` | viewer | Read-only: dashboard, ledger, reconciliation, audit log |
+| Username  | Password   | Role    | Can do                                                     |
+| --------- | ---------- | ------- | ---------------------------------------------------------- |
+| `viewer`  | `demo1234` | viewer  | Read-only: dashboard, ledger, reconciliation, audit log    |
 | `manager` | `demo1234` | manager | + create/edit campaigns, export ledger, run reconciliation |
-| `admin` | `demo1234` | admin | + delete campaigns, manage users/roles |
+| `admin`   | `demo1234` | admin   | + delete campaigns, manage users/roles                     |
 
 **Simulated payment decline**: on the donor "pay" step, enter card last-4
 digit `0002` to trigger a deterministic `402 PAYMENT_DECLINED` (any other
