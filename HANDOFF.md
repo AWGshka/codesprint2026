@@ -50,6 +50,7 @@ cosmetic); Bun-native APIs preferred over node:fs.
 
 ```
 Browser ── https://codesprint2026.awgsh.workers.dev ──> Cloudflare Worker (static SPA assets)
+        (also https://givetap.awgsh.ru — second custom domain on the same Worker)
    │
    └── fetch(credentials: include) ──> https://api.awgsh.ru ──> VPS
                                         (TLS terminated before the app;
@@ -83,7 +84,7 @@ Browser ── https://codesprint2026.awgsh.workers.dev ──> Cloudflare Worke
 | `BETTER_AUTH_SECRET` | any | strong secret |
 | `BETTER_AUTH_URL` | `http://localhost:3001` | `https://api.awgsh.ru` |
 | `FRONTEND_URL` | `http://localhost:3000` | `https://codesprint2026.awgsh.workers.dev` |
-| `FRONTEND_ORIGINS` | extra LAN origins, comma-separated | any extra origins (kiosk, custom domain) |
+| `FRONTEND_ORIGINS` | extra LAN origins, comma-separated | `https://givetap.awgsh.ru` (second custom domain on the same Worker; add any further origins comma-separated) |
 | `MASTERCARD_*` | optional (mock processor when unset) | optional; key files must be placed in `/opt/backend/mastercard/` by hand |
 
 Frontend: `VITE_API_BASE_URL` — `frontend/.env` for dev (LAN IP),
@@ -117,7 +118,9 @@ cd /opt/backend
 # 2. Restart (migrations apply on startup), then seed:
 systemctl restart backend
 /root/.bun/bin/bun run db:seed
-# 3. (Optional) re-upload mastercard/ key files + MASTERCARD_* env vars, restart again
+# 3. (Optional) personal admin account — password must be 8+ chars:
+/root/.bun/bin/bun run user:create awgsh <password>
+# 4. (Optional) re-upload mastercard/ key files + MASTERCARD_* env vars, restart again
 curl -s https://api.awgsh.ru/api/campaigns | head -c 200   # expect { "data": ... }
 ```
 

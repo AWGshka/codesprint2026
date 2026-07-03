@@ -13,7 +13,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
-    "db:seed": "bun run src/db/seed.ts"
+    "db:seed": "bun run src/db/seed.ts",
+    "user:create": "bun run scripts/create-user.ts"
   },
   "dependencies": {
     "@elysiajs/cors": "^1.4.2",
