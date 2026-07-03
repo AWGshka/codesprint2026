@@ -37,13 +37,13 @@ jobs:
             --exclude ".env" \
             --exclude ".git" \
             backend/ \
-            root@${{ secrets.VPS_HOST }}:/etc/backend/
+            root@${{ secrets.VPS_HOST }}:/opt/backend/
 
       - name: Install deps and restart backend
         run: |
           ssh -i ~/.ssh/backend_key -p "${{ secrets.VPS_PORT }}" \
             root@${{ secrets.VPS_HOST }} \
-            'cd /etc/backend && \
+            'cd /opt/backend && \
              /root/.bun/bin/bun install --production --frozen-lockfile && \
              systemctl restart backend && \
              systemctl status backend --no-pager'
