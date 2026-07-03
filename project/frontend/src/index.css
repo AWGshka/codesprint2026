@@ -1,0 +1,244 @@
+@import "tailwindcss";
+
+/* ------------------------------------------------------------------------
+ * GiveTap design tokens — mirrors `.task/GiveTap Kit.dc.html` for the light
+ * set exactly; dark + the two high-contrast variants are derived from it.
+ * Two independent axes on <html>:
+ *   [data-theme="light"|"dark"]      — base palette
+ *   [data-contrast="normal"|"high"]  — AAA text / stronger borders, layered
+ *                                      on top of either theme (4 combos total)
+ * Text scaling via [data-textsize] on <html> (rem-based, 16/18/20px root).
+ * ---------------------------------------------------------------------- */
+
+:root,
+[data-theme="light"] {
+  --surface: #fbfbfc;
+  --surface-raised: #ffffff;
+  --surface-sunken: #f4f4f6;
+  --border: #e6e6e9;
+  --border-strong: #cfcfd4;
+  --fg: #1a1a1c;
+  --fg-muted: #6b6b72;
+  --brand: #0e8c7a;
+  --brand-fg: #ffffff;
+  --accent: #0b6857;
+  --positive: #188a5e;
+  --warning: #b4780f;
+  --danger: #c43d3d;
+  --live: #0e8c7a;
+  --focus: #0e8c7a;
+  --chart-grid: #e6e6e9;
+  --chart-tick: #6b6b72;
+}
+
+/* Light + high-contrast — AAA text, black borders/fg, icon + label states only. */
+[data-theme="light"][data-contrast="high"] {
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-sunken: #ffffff;
+  --border: #333333;
+  --border-strong: #000000;
+  --fg: #000000;
+  --fg-muted: #26262a;
+  --brand: #0a5e52;
+  --brand-fg: #ffffff;
+  --accent: #0a5e52;
+  --positive: #0a6e46;
+  --warning: #7a4e00;
+  --danger: #9e1b1b;
+  --live: #0a5e52;
+  --focus: #0a34c8;
+  --chart-grid: #333333;
+  --chart-tick: #000000;
+}
+
+/* Native date-picker indicator is drawn black by the browser regardless of theme —
+   invert it on dark surfaces so it stays visible. */
+[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator,
+[data-theme="dark"] input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) opacity(0.75);
+}
+
+/* Dark theme — brand brightens slightly to stay recognizable against dark surfaces. */
+[data-theme="dark"] {
+  --surface: #121214;
+  --surface-raised: #1b1b1e;
+  --surface-sunken: #0e0e10;
+  --border: #2a2a2e;
+  --border-strong: #3d3d43;
+  --fg: #f2f2f3;
+  --fg-muted: #a3a3ab;
+  --brand: #14b39d;
+  --brand-fg: #04231d;
+  --accent: #2fd7bd;
+  --positive: #34c78f;
+  --warning: #e0a542;
+  --danger: #e86a6a;
+  --live: #14b39d;
+  --focus: #4da3ff;
+  --chart-grid: #2a2a2e;
+  --chart-tick: #a3a3ab;
+}
+
+/* Dark + high-contrast — stronger borders, pure-ish fg. */
+[data-theme="dark"][data-contrast="high"] {
+  --surface: #000000;
+  --surface-raised: #0a0a0a;
+  --surface-sunken: #000000;
+  --border: #55555c;
+  --border-strong: #ffffff;
+  --fg: #ffffff;
+  --fg-muted: #d8d8dc;
+  --brand: #26e0c3;
+  --brand-fg: #001a15;
+  --accent: #26e0c3;
+  --positive: #3fe0a0;
+  --warning: #ffcf6b;
+  --danger: #ff8080;
+  --live: #26e0c3;
+  --focus: #66c2ff;
+  --chart-grid: #55555c;
+  --chart-tick: #ffffff;
+}
+
+:root {
+  --sans: "Hanken Grotesk", system-ui, sans-serif;
+  --display: "Geist", system-ui, sans-serif;
+  --mono: "Geist Mono", ui-monospace, monospace;
+
+  --fs-display: 2.5rem;
+  --fs-h1: 1.75rem;
+  --fs-h2: 1.3rem;
+  --fs-h3: 1.05rem;
+  --fs-body: 0.9375rem;
+  --fs-sm: 0.8125rem;
+  --fs-label: 0.6875rem;
+  --fs-mono: 0.875rem;
+
+  --r-sm: 6px;
+  --r-md: 9px;
+  --r-lg: 12px;
+  --r-full: 999px;
+
+  --e1: 0 1px 2px rgba(20, 20, 25, 0.05), 0 1px 3px rgba(20, 20, 25, 0.06);
+  --e2: 0 8px 24px -12px rgba(20, 20, 25, 0.18);
+  --e3: 0 24px 60px -30px rgba(20, 20, 25, 0.3);
+}
+
+/* Text scaling — rem-based, applied to the root so every `rem` unit scales. */
+html {
+  font-size: 16px;
+}
+html[data-textsize="112"] {
+  font-size: 18px;
+}
+html[data-textsize="125"] {
+  font-size: 20px;
+}
+
+/* Tailwind v4 theme mapping — utilities (bg-surface-raised, text-fg-muted, …)
+ * resolve to the CSS variables above, so theme/text-size swaps need no JS
+ * beyond toggling the <html> attributes.
+ *
+ * `inline` matters: without it Tailwind emits `--color-brand: var(--brand)` on :root,
+ * where the var() is substituted once — descendant overrides of `--brand` (campaign
+ * branding on the donor subtree) would never reach `bg-brand`/`text-brand` utilities.
+ * With `inline`, utilities compile to `var(--brand)` directly and resolve per element. */
+@theme inline {
+  --font-sans: var(--sans);
+  --font-display: var(--display);
+  --font-mono: var(--mono);
+
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-brand: var(--brand);
+  --color-brand-fg: var(--brand-fg);
+  --color-accent: var(--accent);
+  --color-positive: var(--positive);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-live: var(--live);
+  --color-focus: var(--focus);
+
+  /* Reuses Tailwind's native radius utility names (rounded-sm/md/lg/full). */
+  --radius-sm: var(--r-sm);
+  --radius-md: var(--r-md);
+  --radius-lg: var(--r-lg);
+  --radius-full: var(--r-full);
+
+  --shadow-e1: var(--e1);
+  --shadow-e2: var(--e2);
+  --shadow-e3: var(--e3);
+
+  --text-display: var(--fs-display);
+  --text-h1: var(--fs-h1);
+  --text-h2: var(--fs-h2);
+  --text-h3: var(--fs-h3);
+  --text-body: var(--fs-body);
+  --text-label: var(--fs-label);
+  --text-fs-sm: var(--fs-sm);
+  --text-mono: var(--fs-mono);
+}
+
+body {
+  background: var(--color-surface);
+  color: var(--color-fg);
+  font-family: var(--font-sans);
+}
+
+/* Focus rings always visible, never suppressed — a11y floor. */
+:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+@keyframes gt-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  70% {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes gt-shimmer {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: 400px 0;
+  }
+}
+
+/* Skeleton shimmer — used by shared/ui/skeleton/Skeleton.tsx. */
+.gt-skeleton {
+  background-image: linear-gradient(
+    90deg,
+    var(--color-surface-sunken) 0px,
+    color-mix(in srgb, var(--color-surface-sunken) 40%, var(--color-border)) 40px,
+    var(--color-surface-sunken) 80px
+  );
+  background-size: 400px 100%;
+  animation: gt-shimmer 1.3s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

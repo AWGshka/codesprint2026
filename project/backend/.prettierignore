@@ -1,0 +1,6 @@
+node_modules
+dist
+migrations
+data
+bun.lock
+src/db/auth-schema.ts

@@ -1,0 +1,11 @@
+The popup for desktop of user profile is indeed in front of collapsable menu, but on some screen its possible to see that its under the cards of dashboard, under tables of campaigns and ledger,... so under every content of all admin pages.
+
+Generate favicon.svg with same login of GT latters and background.
+
+Go through comments of projects, remove unnecessary comments, like mentions of (spec §??), keep in mind that current spec sheet is prediction and not actual one, actual one will come in later with you need to do the changes required to implement the actual spec.
+
+we really need to get mastercard up and working.
+[mastercard] guest payment failed, falling back to mock processor: warn: Mastercard POST https://sandbox.api.mastercard.com/donations/guest-payments failed: 500 {"Errors":{"Error":[{"Source":"DONATE_SERVICE","ReasonCode":"INTERNAL_SERVER_ERROR","Description":"An error occurred on the server.","Recoverable":false,"Details":null}]}}
+Could it be that I didnt create something at sandbox? Its currently empty and plain idk if its something from my end
+Sandbox client ID: pOGbCtOcYL9ebsoFCLcHESawpx6cvws440qhJM7Fec71997d
+I couldnt find charity ID, looks like its provided by Mastercard when charity is onboarded with them, where to get it? No idea. What I found is Donors/CArds API, maybe we should implement it as well? Search 

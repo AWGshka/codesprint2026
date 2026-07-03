@@ -1,0 +1,8 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.1/schema.json",
+  "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
+  "formatter": { "enabled": false },
+  "linter": { "enabled": true, "rules": { "recommended": true, "complexity": { "noImportantStyles": "off" } } },
+  "assist": { "enabled": false },
+  "css": { "parser": { "tailwindDirectives": true } }
+}
