@@ -12,7 +12,9 @@
     "lint": "biome lint src",
     "lint:fix": "biome lint --write src",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "deploy": "bun run build && wrangler deploy",
+    "preview": "bun run build && wrangler dev"
   },
   "license": "MIT",
   "devDependencies": {
@@ -25,7 +27,8 @@
     "tailwindcss": "^4.3.1",
     "typescript": "^6.0.3",
     "vite": "^8.1.0",
-    "vite-plugin-solid": "^2.11.12"
+    "vite-plugin-solid": "^2.11.12",
+    "wrangler": "^4.107.0"
   },
   "dependencies": {
     "@solid-primitives/i18n": "^2.2.1",
