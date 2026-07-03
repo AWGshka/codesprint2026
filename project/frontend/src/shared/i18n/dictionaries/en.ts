@@ -77,6 +77,7 @@ export const en = {
     kioskTapToStart: "Tap to start",
     kioskTapCard: "Tap your card",
     kioskTapHint: "Hold your card or phone near the reader.",
+    kioskNfcHint: "NFC ready - tap any card to the back of this phone. Demo only: no card data is read and nothing is charged.",
     kioskEmulate: "Emulate a tap (demo)",
     kioskReading: "Reading card… payment on its way.",
     kioskThanks: "Thank you for giving",

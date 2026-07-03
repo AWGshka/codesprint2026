@@ -2,7 +2,7 @@ import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 import { user } from "~/db/auth-schema";
 
-// Fixed enum (spec §7.6) — every admin mutation writes one of these.
+// Fixed enum — every admin mutation writes one of these.
 export type AuditAction =
   | "campaign.create"
   | "campaign.update"

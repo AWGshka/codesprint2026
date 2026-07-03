@@ -9,11 +9,11 @@ import { db } from "~/db";
 import { env } from "~/env";
 import { AuditService } from "~/modules/audit/service";
 
-// GiveTap RBAC (spec §5.2) — single organization, no org scoping.
+// GiveTap RBAC — single organization, no org scoping.
 // `defaultStatements` (user/session) are the admin plugin's own resources —
 // its built-in routes (list/ban/set-role/impersonate/...) check permissions
 // against them internally, so every role must carry the actions it needs
-// there even though the spec's table simplifies "user" to read/manage.
+// there for viewer/manager as well, not only admin.
 const statement = {
   ...defaultStatements,
   campaign: ["read", "create", "update", "delete"],
@@ -43,7 +43,7 @@ export const admin_ = ac.newRole({
 export const auth = betterAuth({
   baseURL: env.BETTER_AUTH_URL,
   secret: env.BETTER_AUTH_SECRET,
-  trustedOrigins: [env.FRONTEND_URL],
+  trustedOrigins: env.FRONTEND_ORIGINS,
   database: drizzleAdapter(db, { provider: "sqlite" }),
   emailAndPassword: { enabled: true },
   user: {
@@ -64,7 +64,7 @@ export const auth = betterAuth({
   // Cross-site prod (Cloudflare Pages ↔ VPS) needs SameSite=None; Secure cookies.
   // Uncomment in production; leave off in dev (same-site localhost works as-is).
   // advanced: { defaultCookieAttributes: { sameSite: "none", secure: true } },
-  // Records `auth.login` in the audit trail (spec §7.6) on any successful sign-in.
+  // Records `auth.login` in the audit trail on any successful sign-in.
   hooks: {
     after: createAuthMiddleware(async (ctx) => {
       if (!ctx.path.startsWith("/sign-in")) return;

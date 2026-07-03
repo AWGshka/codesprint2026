@@ -32,7 +32,7 @@ const serialize = (row: AuditLog, actor?: ActorIdentity) => ({
 });
 
 // Sole Drizzle touchpoint for the audit trail. `record` is called from every
-// other module's service on mutation (spec §7.6 — writes live in the service
+// other module's service on mutation (audit writes live in the service
 // layer, never the route).
 export abstract class AuditService {
   static async record(input: RecordAuditInput) {

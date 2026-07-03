@@ -1,8 +1,9 @@
 import type { Component } from "solid-js";
-import { For, Show, createMemo, createSignal } from "solid-js";
+import { For, Show, createEffect, createMemo, createSignal, onCleanup } from "solid-js";
 
 import { t } from "~/shared/i18n";
 import { cn } from "~/shared/lib/cn";
+import { mockPanForTap, nfcAvailable, startNfcTapScan } from "~/shared/lib/nfc";
 import { convertMinor, formatMoney } from "~/shared/lib/money";
 import { Banner, Button, Field, Input, Stepper } from "~/shared/ui";
 import { ApiError, apiErrorCode, createDonation, lookupBin } from "~/shared/api";
@@ -102,11 +103,13 @@ export const GiveFlow: Component<GiveFlowProps> = (props) => {
     }
   };
 
-  /** Kiosk tap-to-pay: no card entry or review — an emulated NFC tap reads a demo card and pays immediately. */
-  const emulateTap = async () => {
+  /** Kiosk tap-to-pay: no card entry or review — a tap (real NFC or the demo button) reads a
+   * mock card and pays immediately. Browsers can't read real PANs, so the number is simulated. */
+  const performTap = async (pan = "4242424242424242") => {
+    if (tapReading() || submitting()) return;
     setTapReading(true);
     setErrorKind(undefined);
-    setCardNumber("4242 4242 4242 4242");
+    setCardNumber(formatCardNumber(pan));
     await new Promise((resolve) => setTimeout(resolve, 1200));
     try {
       await submit();
@@ -114,6 +117,29 @@ export const GiveFlow: Component<GiveFlowProps> = (props) => {
       setTapReading(false);
     }
   };
+
+  const [nfcActive, setNfcActive] = createSignal(false);
+
+  // Real NFC tap detection (Chrome/Android + secure context): any tag — including a payment
+  // card, which surfaces as a reading error — triggers the same simulated payment as the
+  // demo button. Scan runs only while the tap screen is showing.
+  createEffect(() => {
+    if (!props.tapToPay || step() !== 1 || !nfcAvailable()) return;
+    let stop: (() => void) | undefined;
+    let disposed = false;
+    startNfcTapScan((serial) => performTap(mockPanForTap(serial)))
+      .then((stopScan) => {
+        if (disposed) return stopScan();
+        stop = stopScan;
+        setNfcActive(true);
+      })
+      .catch(() => setNfcActive(false));
+    onCleanup(() => {
+      disposed = true;
+      stop?.();
+      setNfcActive(false);
+    });
+  });
 
   return (
     <div class="space-y-5">
@@ -209,14 +235,19 @@ export const GiveFlow: Component<GiveFlowProps> = (props) => {
               <path d="M19.5 8.5a6.5 6.5 0 0 1 0 7M21.5 6.5a9.5 9.5 0 0 1 0 11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
             </svg>
           </div>
-          <p class="font-sans text-body text-fg-muted">{tapReading() ? t("donor.kioskReading") : t("donor.kioskTapHint")}</p>
+          <p class="font-sans text-body text-fg-muted">
+            {tapReading() ? t("donor.kioskReading") : nfcActive() ? t("donor.kioskNfcHint") : t("donor.kioskTapHint")}
+          </p>
+          <Show when={tapReading()}>
+            <p class="font-mono text-h3 tabular-nums text-fg">{cardNumber()}</p>
+          </Show>
 
           <Show when={errorKind()}>
             <Banner variant="danger">{errorKind() === "network" ? t("donor.networkErrorBody") : errorMessage() || t("common.error")}</Banner>
           </Show>
 
           <div class="flex flex-col gap-2">
-            <Button variant="ghost" size="sm" class="mx-auto" disabled={tapReading()} onClick={emulateTap}>
+            <Button variant="ghost" size="sm" class="mx-auto" disabled={tapReading()} onClick={() => performTap()}>
               {t("donor.kioskEmulate")}
             </Button>
             <Button variant="secondary" class={cn("w-full", props.big && "min-h-16 text-h3")} disabled={tapReading()} onClick={() => setStep(0)}>

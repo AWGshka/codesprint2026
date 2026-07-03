@@ -5,6 +5,7 @@
     "dev": "bun --watch src/server.ts",
     "start": "bun src/server.ts",
     "typecheck": "tsc --noEmit",
+    "mastercard:check": "bun run scripts/mastercard-check.ts",
     "lint": "biome lint src",
     "lint:fix": "biome lint --write src",
     "format": "prettier --write .",

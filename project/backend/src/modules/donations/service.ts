@@ -30,7 +30,7 @@ const toPublic = (row: Donation) => ({
 });
 
 export abstract class DonationService {
-  // Simulated payment (spec §7.1): validate -> deterministic decline -> persist
+  // Simulated payment: validate -> deterministic decline -> persist
   // donation + settlement -> emit donation.created -> return receipt.
   static async create(slug: string, input: CreateDonationInput) {
     const [campaign] = await db.select().from(campaigns).where(eq(campaigns.slug, slug)).limit(1);

@@ -1,6 +1,6 @@
 import { t } from "elysia";
 
-// Static conversion table (spec §7.3) — hardcoded, no live FX. EUR is the base
+// Static conversion table — hardcoded, no live FX. EUR is the base
 // for dashboard aggregation; per-currency totals are shown alongside it so
 // mixed currencies are never silently summed.
 export type Currency = "EUR" | "USD" | "GBP";

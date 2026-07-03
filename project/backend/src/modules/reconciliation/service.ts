@@ -6,7 +6,7 @@ import { classify } from "~/lib/reconcile";
 import { AuditService } from "~/modules/audit/service";
 import { processorSettlements } from "~/db/processor-settlements";
 
-// Full-join diff on `paymentRef` (spec §7.2). `donations` is source A (only
+// Full-join diff on `paymentRef`. `donations` is source A (only
 // completed rows count — pending/failed never settle), `processor_settlements`
 // is source B (the mock external feed).
 export abstract class ReconciliationService {
@@ -39,7 +39,7 @@ export abstract class ReconciliationService {
     return { summary, rows };
   }
 
-  // The mock external processor feed reconciliation reads (spec §6.3).
+  // The mock external processor feed reconciliation reads.
   static async settlementsFeed() {
     const rows = await db.select().from(processorSettlements);
     return rows.map((s) => ({

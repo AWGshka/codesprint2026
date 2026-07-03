@@ -49,7 +49,7 @@ let cachedFle: InstanceType<typeof encryption.FieldLevelEncryption> | undefined;
 /** Donate whole-body field-level encryption (docs: $→$, HEX, SHA-256 OAEP, cert fingerprint). */
 const fle = () =>
   (cachedFle ??= new encryption.FieldLevelEncryption({
-    paths: [{ path: "/guest-payments", toEncrypt: [{ element: "$", obj: "$" }], toDecrypt: [] }],
+    paths: [{ path: "/(guest-payments|donors|payments)", toEncrypt: [{ element: "$", obj: "$" }], toDecrypt: [] }],
     ivFieldName: "iv",
     encryptedKeyFieldName: "encryptedKey",
     encryptedValueFieldName: "encryptedData",
@@ -99,7 +99,7 @@ const SANDBOX_TEST_CARD = { primaryAccountNumber: "5506900140100305", cvc: "100"
 export abstract class MastercardDonateClient {
   /**
    * Guest (unregistered donor) donation — POST /guest-payments with the whole body encrypted.
-   * Guest donations are donationType DISASTER per the spec.
+   * Guest donations are donationType DISASTER per Mastercard's Donate API spec.
    */
   static guestPayment = async (input: MastercardGuestPaymentInput): Promise<MastercardGuestPaymentResult> => {
     const [firstName, ...rest] = (input.donorName ?? "Guest Donor").trim().split(/\s+/);
@@ -116,6 +116,27 @@ export abstract class MastercardDonateClient {
     const paymentId = (raw.transactionId ?? "") as string;
     if (!paymentId) throw new Error("Mastercard Donate response had no transaction identifier");
     return { paymentId, raw };
+  };
+
+  /**
+   * Registers a donor on the Donate platform (POST /donors, whole body encrypted) and
+   * returns the platform's donorId. Consent versions are the documented sandbox values.
+   */
+  static enrollDonor = async (input: { firstName: string; lastName: string; email: string }): Promise<{ donorId: string; raw: unknown }> => {
+    const url = `${config.donateBaseUrl}/donors`;
+    const body = {
+      acceptedConsents: { marketingEmailSubscribed: "Y", privacyNoticeVersion: "PN.2-#-xr.en-us.99.01", tncVersion: "TC.##r#12.EN-Us.99.99" },
+      userName: input.email,
+      userType: "API",
+      name: { firstName: input.firstName, lastName: input.lastName },
+      emails: [{ type: "home", value: input.email }],
+      locale: "en-us",
+    };
+    const encrypted = fle().encrypt(url, {}, body).body as Record<string, unknown>;
+    const raw = await request<Record<string, unknown>>("POST", url, encrypted, config.clientId ? { "X-Openapi-Clientid": config.clientId } : {});
+    const donorId = (raw.donorId ?? raw.id ?? "") as string;
+    if (!donorId) throw new Error("Mastercard Donate enrollment returned no donorId");
+    return { donorId, raw };
   };
 }
 

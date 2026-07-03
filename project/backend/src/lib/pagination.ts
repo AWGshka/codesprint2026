@@ -1,4 +1,4 @@
-// Shared list-response shape (spec §6): `{ rows, total, page, pageSize }`.
+// Shared list-response shape: `{ rows, total, page, pageSize }`.
 export type Paginated<T> = { rows: T[]; total: number; page: number; pageSize: number };
 
 const MAX_PAGE_SIZE = 100;

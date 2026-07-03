@@ -77,6 +77,7 @@ export const mt = {
     kioskTapToStart: "Miss biex tibda",
     kioskTapCard: "Miss il-karta tiegħek",
     kioskTapHint: "Żomm il-karta jew il-mowbajl viċin il-qarrej.",
+    kioskNfcHint: "NFC lest - miss kwalunkwe karta man-naħa ta' wara ta' dan il-mowbajl. Demo biss: l-ebda data tal-karta ma tinqara u xejn ma jitħallas.",
     kioskEmulate: "Simula miss (demo)",
     kioskReading: "Qed tinqara l-karta… il-ħlas fi triqtu.",
     kioskThanks: "Grazzi talli tajt",

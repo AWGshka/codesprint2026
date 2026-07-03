@@ -2,7 +2,7 @@ import { Elysia, sse } from "elysia";
 
 import { authPlugin } from "~/plugins/auth";
 
-// In-memory pub/sub for the admin live dashboard (spec §7.7). No external
+// In-memory pub/sub for the admin live dashboard. No external
 // broker — a single-process demo backend is fine to keep this in memory.
 type EventName = "donation.created" | "reconciliation.updated";
 

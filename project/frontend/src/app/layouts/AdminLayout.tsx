@@ -83,9 +83,11 @@ const AdminShell: ParentComponent = (props) => {
 
       {/* Sticky, exactly viewport height — never taller than the screen. Collapsible to an
           icon rail; the choice persists in localStorage. */}
+      {/* z-30: position:sticky always creates a stacking context, so without an explicit
+          z-index the profile popover (fixed inside this aside) paints under the page content. */}
       <aside
         class={cn(
-          "sticky top-0 hidden h-screen shrink-0 flex-col overflow-hidden border-r border-border bg-surface-raised transition-[width] duration-200 sm:flex",
+          "sticky top-0 z-30 hidden h-screen shrink-0 flex-col overflow-hidden border-r border-border bg-surface-raised transition-[width] duration-200 sm:flex",
           collapsed() ? "w-16 p-2" : "w-60 p-4",
         )}>
         <div class={cn("flex items-center", collapsed() ? "justify-center" : "justify-between px-2")}>

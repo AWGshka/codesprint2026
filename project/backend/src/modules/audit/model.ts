@@ -1,6 +1,6 @@
 import { t } from "elysia";
 
-// Full audit-action enum (spec §7.6) — every admin mutation writes one of these.
+// Full audit-action enum — every admin mutation writes one of these.
 export const AuditActionSchema = t.Union([
   t.Literal("campaign.create"),
   t.Literal("campaign.update"),

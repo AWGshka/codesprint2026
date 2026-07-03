@@ -2,7 +2,7 @@ import { Elysia } from "elysia";
 
 import { auth } from "~/auth";
 
-// Subset of the `ac` statement shape (spec §5.3) — e.g. { campaign: ["create"] }.
+// Subset of the `ac` statement shape — e.g. { campaign: ["create"] }.
 type PermissionRequest = Record<string, string[]>;
 
 // Mounts Better Auth's handler (/api/auth/*) and exposes two macros:

@@ -2,7 +2,7 @@ import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 import { user } from "~/db/auth-schema";
 
-// Campaign status lifecycle (spec §4.2). 'draft' campaigns are never returned
+// Campaign status lifecycle. 'draft' campaigns are never returned
 // by the public list/detail endpoints.
 export type CampaignStatus = "draft" | "active" | "paused" | "ended";
 

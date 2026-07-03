@@ -1,6 +1,6 @@
 export type CurrencyCode = "EUR" | "USD" | "GBP";
 
-/** Static conversion rates *to* EUR-equivalent (per spec §7.3) — not live FX. */
+/** Static conversion rates *to* EUR-equivalent — not live FX. */
 export const RATES_TO_EUR: Record<CurrencyCode, number> = { EUR: 1, USD: 1.08, GBP: 0.85 };
 
 /** Formats minor units (e.g. cents) as a localized currency string. */

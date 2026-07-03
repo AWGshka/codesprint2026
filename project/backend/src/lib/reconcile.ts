@@ -1,4 +1,4 @@
-// Pure reconciliation classification (spec §7.2) — factored out of the
+// Pure reconciliation classification — factored out of the
 // service so it's testable without a database. A full-join on `paymentRef`
 // between completed donations (source A) and processor settlements (source B).
 export type ReconStatus = "matched" | "mismatched" | "missingInProcessor" | "missingInApp";

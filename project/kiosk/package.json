@@ -1,0 +1,23 @@
+{
+  "name": "givetap-kiosk",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Native kiosk shell for GiveTap - wraps the web kiosk route in Capacitor and hosts the Tap to Pay (Stripe Terminal) integration.",
+  "scripts": {
+    "sync": "cap sync",
+    "android": "cap run android",
+    "ios": "cap run ios",
+    "open:android": "cap open android",
+    "open:ios": "cap open ios"
+  },
+  "dependencies": {
+    "@capacitor-community/stripe-terminal": "^8.1.1",
+    "@capacitor/android": "^8.4.1",
+    "@capacitor/core": "^8.4.1",
+    "@capacitor/ios": "^8.4.1"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.4.1",
+    "typescript": "^5.7.0"
+  }
+}

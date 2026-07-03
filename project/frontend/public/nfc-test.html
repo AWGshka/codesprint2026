@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>NFC capability test</title>
+    <style>
+      body { margin: 0; padding: 24px; font-family: system-ui, sans-serif; background: #fbfbfc; color: #1a1a1c; }
+      h1 { font-size: 1.3rem; } code { background: #f4f4f6; padding: 1px 5px; border-radius: 4px; }
+      .row { display: flex; gap: 8px; align-items: baseline; margin: 6px 0; }
+      .ok { color: #188a5e; font-weight: 700; } .bad { color: #c43d3d; font-weight: 700; }
+      button { min-height: 44px; padding: 0 16px; border: 0; border-radius: 8px; background: #0e8c7a; color: #fff; font-size: 1rem; font-weight: 600; }
+      pre { background: #f4f4f6; padding: 12px; border-radius: 8px; white-space: pre-wrap; word-break: break-word; min-height: 60px; }
+      p.note { color: #6b6b72; font-size: 0.9rem; }
+    </style>
+  </head>
+  <body>
+    <h1>NFC capability test</h1>
+    <div id="checks"></div>
+    <p><button id="scan">Start NDEF scan</button></p>
+    <pre id="log">Log output…</pre>
+    <p class="note">
+      Web NFC only reads <b>NDEF tags</b> (stickers, transit posters). Bank cards are EMV smartcards and will
+      <b>never</b> trigger events here — accepting card taps requires a native app with a certified
+      Tap&nbsp;to&nbsp;Phone SDK (see <code>project/kiosk</code>). To verify your phone's NFC radio sees a bank
+      card at all, use the "NFC TagInfo by NXP" app - it will show the card as ISO-DEP with its payment AID.
+    </p>
+    <script>
+      const checks = document.getElementById("checks");
+      const log = document.getElementById("log");
+      const add = (label, pass, detail = "") => {
+        const div = document.createElement("div");
+        div.className = "row";
+        div.innerHTML = `<span class="${pass ? "ok" : "bad"}">${pass ? "PASS" : "FAIL"}</span> ${label} ${detail ? `<code>${detail}</code>` : ""}`;
+        checks.append(div);
+      };
+
+      add("Secure context (Web NFC requires HTTPS or localhost)", window.isSecureContext, location.origin);
+      add("NDEFReader API available in this browser", "NDEFReader" in window);
+      add("User agent", true, navigator.userAgent.includes("Android") ? "Android" : "not Android (Web NFC is Android-only)");
+
+      document.getElementById("scan").addEventListener("click", async () => {
+        if (!("NDEFReader" in window)) return (log.textContent = "NDEFReader not available - this browser has no Web NFC.");
+        try {
+          const reader = new NDEFReader();
+          await reader.scan();
+          log.textContent = "Scanning… hold an NDEF tag (not a bank card) to the phone's NFC antenna.";
+          reader.onreading = (e) => (log.textContent = `TAG READ\nserial: ${e.serialNumber}\nrecords: ${e.message.records.length}`);
+          reader.onreadingerror = () => (log.textContent += "\nTag detected but could not be read (probably not NDEF - e.g. a bank card).");
+        } catch (err) {
+          log.textContent = `scan() failed: ${err}\n(NotAllowedError = permission denied; NotSupportedError = no NFC hardware or NFC disabled in settings)`;
+        }
+      });
+    </script>
+  </body>
+</html>
