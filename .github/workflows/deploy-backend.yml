@@ -43,13 +43,13 @@ jobs:
             backend/ \
             root@${{ secrets.VPS_HOST }}:/opt/backend/
 
-      - name: Install deps, migrate and restart backend
+      - name: Install deps and restart backend
         run: |
-          # Dev deps included: drizzle-kit (db:migrate) is a devDependency.
+          # Production deps only — migrations run inside the app on startup (src/server.ts),
+          # so drizzle-kit and the rest of the devDependencies never hit the VPS.
           ssh -i ~/.ssh/backend_key -p "${{ secrets.VPS_PORT }}" \
             root@${{ secrets.VPS_HOST }} \
             'cd /opt/backend && \
-             /root/.bun/bin/bun install --frozen-lockfile && \
-             /root/.bun/bin/bun run db:migrate && \
+             /root/.bun/bin/bun install --production --frozen-lockfile && \
              systemctl restart backend && \
              systemctl status backend --no-pager'

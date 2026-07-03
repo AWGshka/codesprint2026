@@ -66,9 +66,10 @@ Browser ── https://codesprint2026.awgsh.workers.dev ──> Cloudflare Worke
 - **Backend**: `.github/workflows/deploy-backend.yml` runs on push to `main`
   touching `backend/**`. It rsyncs `backend/` → `root@VPS:/opt/backend/`
   (excluding `node_modules`, `.env`, `data/`, `mastercard/`), then
-  `bun install --frozen-lockfile`, `bun run db:migrate`, and
-  `systemctl restart backend`. GitHub secrets: `VPS_SSH_KEY`, `VPS_HOST`,
-  `VPS_PORT`.
+  `bun install --production --frozen-lockfile` and `systemctl restart backend`.
+  Migrations apply automatically at app startup (`src/server.ts` runs the
+  drizzle-orm migrator), so no dev deps are needed on the VPS. GitHub
+  secrets: `VPS_SSH_KEY`, `VPS_HOST`, `VPS_PORT`.
 - **Kiosk**: not deployed anywhere; built/side-loaded manually with Capacitor
   (`cd kiosk && bun run sync && bun run android`).
 
@@ -113,11 +114,10 @@ Frontend: `VITE_API_BASE_URL` — `frontend/.env` for dev (LAN IP),
 ssh -p <port> root@<vps>
 cd /opt/backend
 # 1. Fix .env (see matrix above): NODE_ENV, BETTER_AUTH_URL, FRONTEND_URL
-# 2. Recreate + seed the DB:
-/root/.bun/bin/bun run db:migrate
-/root/.bun/bin/bun run db:seed
-# 3. (Optional) re-upload mastercard/ key files + MASTERCARD_* env vars
+# 2. Restart (migrations apply on startup), then seed:
 systemctl restart backend
+/root/.bun/bin/bun run db:seed
+# 3. (Optional) re-upload mastercard/ key files + MASTERCARD_* env vars, restart again
 curl -s https://api.awgsh.ru/api/campaigns | head -c 200   # expect { "data": ... }
 ```
 

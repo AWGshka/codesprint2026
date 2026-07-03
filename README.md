@@ -46,7 +46,7 @@ kiosk/      Capacitor (Android/iOS) shell that wraps the web kiosk route and
 | Piece    | Where                                              | How                                                                                                          |
 | -------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
 | Frontend | Cloudflare Workers (static assets), `frontend/wrangler.toml` | Auto-deploys on push (Cloudflare git integration). Manual: `cd frontend && bun run deploy`.                    |
-| Backend  | Private VPS (`https://api.awgsh.ru`), systemd unit `backend` | `.github/workflows/deploy-backend.yml` — rsync to `/opt/backend`, `bun install`, `db:migrate`, restart.       |
+| Backend  | Private VPS (`https://api.awgsh.ru`), systemd unit `backend` | `.github/workflows/deploy-backend.yml` — rsync to `/opt/backend`, prod-only `bun install`, restart (migrations run at app startup). |
 | Kiosk    | Side-loaded Android build                          | Manual: `cd kiosk && bun run sync && bun run android`.                                                         |
 
 Production wiring:
