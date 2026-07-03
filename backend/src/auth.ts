@@ -61,9 +61,9 @@ export const auth = betterAuth({
     }),
     admin({ ac, roles: { viewer, manager, admin: admin_ }, defaultRole: "viewer", adminRoles: ["admin"] }),
   ],
-  // Cross-site prod (Cloudflare Pages ↔ VPS) needs SameSite=None; Secure cookies.
-  // Uncomment in production; leave off in dev (same-site localhost works as-is).
-  // advanced: { defaultCookieAttributes: { sameSite: "none", secure: true } },
+  // Cross-site prod (Cloudflare Workers ↔ VPS) needs SameSite=None; Secure cookies.
+  // Dev stays on the defaults (same-site localhost works as-is, and Secure would break http).
+  ...(env.NODE_ENV === "production" ? { advanced: { defaultCookieAttributes: { sameSite: "none" as const, secure: true } } } : {}),
   // Records `auth.login` in the audit trail on any successful sign-in.
   hooks: {
     after: createAuthMiddleware(async (ctx) => {

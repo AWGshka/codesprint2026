@@ -31,19 +31,25 @@ jobs:
 
       - name: Upload backend only
         run: |
+          # data/ (SQLite) and mastercard/ (key material) live only on the VPS —
+          # they are gitignored, so without the excludes --delete would wipe them.
           rsync -az --delete \
             -e "ssh -i ~/.ssh/backend_key -p ${{ secrets.VPS_PORT }}" \
             --exclude "node_modules" \
             --exclude ".env" \
             --exclude ".git" \
+            --exclude "data" \
+            --exclude "mastercard" \
             backend/ \
             root@${{ secrets.VPS_HOST }}:/opt/backend/
 
-      - name: Install deps and restart backend
+      - name: Install deps, migrate and restart backend
         run: |
+          # Dev deps included: drizzle-kit (db:migrate) is a devDependency.
           ssh -i ~/.ssh/backend_key -p "${{ secrets.VPS_PORT }}" \
             root@${{ secrets.VPS_HOST }} \
             'cd /opt/backend && \
-             /root/.bun/bin/bun install --production --frozen-lockfile && \
+             /root/.bun/bin/bun install --frozen-lockfile && \
+             /root/.bun/bin/bun run db:migrate && \
              systemctl restart backend && \
              systemctl status backend --no-pager'
