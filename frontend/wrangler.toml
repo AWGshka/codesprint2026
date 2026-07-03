@@ -9,3 +9,6 @@ enabled = true
 
 [assets]
 directory = "./dist"
+# SPA fallback — unknown paths (e.g. a hard refresh on /admin) serve index.html
+# with a 200 instead of 404; the client router takes it from there.
+not_found_handling = "single-page-application"
