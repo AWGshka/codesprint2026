@@ -233,7 +233,7 @@ export const en = {
     status: "Status",
     brandColor: "Brand colour",
     logo: "Logo",
-    logoHint: "Emoji or 2 letters (falls back to campaign initials)",
+    logoHint: "Emoji, 2 letters, or upload an image (save first)",
     presets: "Suggested amounts",
     allowCustom: "Allow custom amount",
     frequencies: "Frequencies offered",

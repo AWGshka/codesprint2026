@@ -19,6 +19,8 @@ import type {
   UserRole,
 } from "./types";
 
+import { env } from "~/shared/config/env";
+
 const qs = (params: object) => {
   const search = new URLSearchParams();
   for (const [key, value] of Object.entries(params as Record<string, string | number | undefined | null>)) {
@@ -55,6 +57,15 @@ export const adminGetCampaign = (id: string) => api.get<CampaignAdmin>(`/api/adm
 export const adminCreateCampaign = (body: CreateCampaignBody) => api.post<CampaignAdmin>("/api/admin/campaigns", body);
 export const adminUpdateCampaign = (id: string, body: Partial<CreateCampaignBody>) => api.put<CampaignAdmin>(`/api/admin/campaigns/${id}`, body);
 export const adminDeleteCampaign = (id: string) => api.del<{ deleted: true }>(`/api/admin/campaigns/${id}`);
+
+export const adminUploadLogo = async (campaignId: string, file: File): Promise<{ logoUrl: string }> => {
+  const form = new FormData();
+  form.append("logo", file);
+  const res = await fetch(`${env.apiBaseUrl}/api/admin/campaigns/${campaignId}/logo`, { method: "POST", body: form, credentials: "include" });
+  if (!res.ok) throw new Error(`Upload failed: ${res.status}`);
+  const json = await res.json();
+  return json.data;
+};
 
 // ---- Admin donations / ledger ----
 export interface LedgerQuery {

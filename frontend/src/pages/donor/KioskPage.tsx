@@ -5,6 +5,7 @@ import { Motion, Presence } from "solid-motionone";
 import { Show, createMemo, createResource, createSignal, onCleanup } from "solid-js";
 
 import { t } from "~/shared/i18n";
+import { env } from "~/shared/config/env";
 import { getCampaign } from "~/shared/api";
 import { PrefsControls } from "~/shared/prefs";
 import { GiveFlow } from "~/app/donor/GiveFlow";
@@ -49,9 +50,15 @@ const KioskPage: Component = () => {
           <div class="flex min-h-screen flex-col bg-surface" style={{ "--brand": c().brandColor, "--brand-fg": readableForeground(c().brandColor) }}>
             <header class="space-y-3 border-b border-border bg-surface-raised px-6 py-4">
               <div class="flex items-center justify-center gap-2">
-                <span class="inline-flex size-8 items-center justify-center rounded-md bg-brand text-sm font-bold text-brand-fg">
-                  {c().logoUrl || c().name.slice(0, 2).toUpperCase()}
-                </span>
+                <Show
+                  when={c().logoUrl?.startsWith("/")}
+                  fallback={
+                    <span class="inline-flex size-8 items-center justify-center rounded-md bg-brand text-sm font-bold text-brand-fg">
+                      {c().logoUrl || c().name.slice(0, 2).toUpperCase()}
+                    </span>
+                  }>
+                  <img src={`${env.apiBaseUrl}${c().logoUrl}`} alt="" class="size-8 rounded-md object-cover" />
+                </Show>
                 <span class="font-display text-h2 font-semibold text-fg">{c().name}</span>
                 <span class="hidden rounded-full border border-border px-2.5 py-0.5 font-sans text-label text-fg-muted sm:inline">{c().cause}</span>
                 <span class="ml-auto">

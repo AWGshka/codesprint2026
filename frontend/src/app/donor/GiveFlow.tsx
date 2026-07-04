@@ -327,7 +327,9 @@ export const GiveFlow: Component<GiveFlowProps> = (props) => {
 
           {/* Donor options: round-up (S1.1), supporters wall (S1.3), Gift Aid (S1.2). */}
           <div class="space-y-3 rounded-md border border-border bg-surface-sunken p-4">
-            <Checkbox checked={roundUp()} onChange={setRoundUp} label={t("donor.roundUpLabel", { amount: formatMoney(ROUND_TO_MINOR, props.currency) })} />
+            <Show when={!props.tapToPay}>
+              <Checkbox checked={roundUp()} onChange={setRoundUp} label={t("donor.roundUpLabel", { amount: formatMoney(ROUND_TO_MINOR, props.currency) })} />
+            </Show>
             <div class="space-y-1">
               <Checkbox checked={showOnWall()} onChange={setShowOnWall} label={t("donor.showOnWallLabel")} />
               <p class="pl-7 font-sans text-label text-fg-muted">{t("donor.wallAnonymousHint")}</p>

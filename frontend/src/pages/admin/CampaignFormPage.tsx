@@ -4,8 +4,9 @@ import type { Component } from "solid-js";
 import { For, Show, createEffect, createResource, createSignal } from "solid-js";
 
 import { t } from "~/shared/i18n";
-import { adminCreateCampaign, adminGetCampaign, adminUpdateCampaign } from "~/shared/api";
+import { env } from "~/shared/config/env";
 import type { CampaignStatus, CreateCampaignBody, CurrencyCode, DonationFrequency } from "~/shared/api";
+import { adminCreateCampaign, adminGetCampaign, adminUpdateCampaign, adminUploadLogo } from "~/shared/api";
 import { Button, Card, Checkbox, ErrorState, Field, Input, Select, Skeleton, showToast } from "~/shared/ui";
 
 const emptyForm: CreateCampaignBody = {
@@ -46,6 +47,7 @@ const CampaignFormPage: Component = () => {
   const [startsAt, setStartsAt] = createSignal("");
   const [endsAt, setEndsAt] = createSignal("");
   const [saving, setSaving] = createSignal(false);
+  const [uploading, setUploading] = createSignal(false);
   const [error, setError] = createSignal<string>();
   let hydrated = false;
 
@@ -62,6 +64,23 @@ const CampaignFormPage: Component = () => {
 
   const toggleFrequency = (freq: DonationFrequency) => {
     setForm((f) => ({ ...f, frequencies: f.frequencies.includes(freq) ? f.frequencies.filter((x) => x !== freq) : [...f.frequencies, freq] }));
+  };
+
+  const handleLogoUpload = async (file: File) => {
+    if (!isEdit() || !params.id) {
+      showToast("Save the campaign first, then upload a logo.", "warning");
+      return;
+    }
+    setUploading(true);
+    try {
+      const { logoUrl } = await adminUploadLogo(params.id, file);
+      setForm({ ...form(), logoUrl });
+      showToast(t("admin.save"), "success");
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Upload failed", "danger");
+    } finally {
+      setUploading(false);
+    }
   };
 
   const submit = async (event: Event) => {
@@ -171,15 +190,36 @@ const CampaignFormPage: Component = () => {
                   <Input
                     class="max-w-24"
                     maxlength={2}
-                    value={form().logoUrl ?? ""}
+                    value={form().logoUrl && !form().logoUrl!.startsWith("/") ? form().logoUrl! : ""}
                     onInput={(e) => setForm({ ...form(), logoUrl: e.currentTarget.value || undefined })}
                     placeholder="🌍"
                   />
-                  <span
-                    class="inline-flex size-10 items-center justify-center rounded-lg text-base font-bold"
-                    style={{ background: form().brandColor, color: "#fff" }}>
-                    {form().logoUrl || form().name.slice(0, 2).toUpperCase() || "GT"}
-                  </span>
+                  <Show
+                    when={form().logoUrl?.startsWith("/")}
+                    fallback={
+                      <span
+                        class="inline-flex size-10 items-center justify-center rounded-lg text-base font-bold"
+                        style={{ background: form().brandColor, color: "#fff" }}>
+                        {form().logoUrl || form().name.slice(0, 2).toUpperCase() || "GT"}
+                      </span>
+                    }>
+                    <img src={`${env.apiBaseUrl}${form().logoUrl}`} alt="Logo" class="size-10 rounded-lg object-cover" />
+                  </Show>
+                  <Show when={isEdit()}>
+                    <label class="cursor-pointer rounded-md border border-border-strong bg-surface-raised px-3 py-2 font-sans text-label text-fg-muted hover:bg-surface-sunken">
+                      {uploading() ? "Uploading\u2026" : "Upload image"}
+                      <input
+                        type="file"
+                        class="hidden"
+                        accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                        onChange={(e) => {
+                          const file = e.currentTarget.files?.[0];
+                          if (file) handleLogoUpload(file);
+                          e.currentTarget.value = "";
+                        }}
+                      />
+                    </label>
+                  </Show>
                 </div>
               </Field>
 

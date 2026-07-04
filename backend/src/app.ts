@@ -16,6 +16,7 @@ import { donations } from "~/modules/donations";
 import { eventsPlugin } from "~/plugins/events";
 import { errorHandler } from "~/plugins/error-handler";
 import { reconciliation } from "~/modules/reconciliation";
+import { campaignUpload } from "~/modules/campaigns/upload";
 
 // errorHandler first so its global onError covers every plugin mounted after.
 // CORS allows credentials so the browser can carry the auth session cookie.
@@ -33,7 +34,23 @@ export const app = new Elysia()
   .use(authPlugin)
   .get("/", () => ok({ name: "api", status: "ok" }), { detail: { summary: "Service root" } })
   .get("/me", ({ user }) => ok(user), { auth: true, detail: { summary: "Current user", tags: ["Auth"] } })
+  .get(
+    "/uploads/:filename",
+    async ({ params, set }) => {
+      const file = Bun.file(`./data/uploads/${params.filename.replace(/[^a-zA-Z0-9._-]/g, "")}`);
+      if (!(await file.exists())) {
+        set.status = 404;
+        return "Not found";
+      }
+      set.headers["content-type"] = file.type;
+      set.headers["cache-control"] = "public, max-age=31536000, immutable";
+      return file;
+    },
+    { detail: { summary: "Serve uploaded file", tags: ["Static"] } },
+  )
   .use(health)
-  .group("/api", (app) => app.use(campaigns).use(donations).use(dashboard).use(reconciliation).use(audit).use(users).use(config).use(eventsPlugin));
+  .group("/api", (app) =>
+    app.use(campaigns).use(campaignUpload).use(donations).use(dashboard).use(reconciliation).use(audit).use(users).use(config).use(eventsPlugin),
+  );
 
 export type App = typeof app;

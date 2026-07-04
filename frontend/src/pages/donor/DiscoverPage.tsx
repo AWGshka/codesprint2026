@@ -4,6 +4,7 @@ import type { Component } from "solid-js";
 import { For, Show, createMemo, createResource, createSignal } from "solid-js";
 
 import { t } from "~/shared/i18n";
+import { env } from "~/shared/config/env";
 import { listCampaigns } from "~/shared/api";
 import { formatMoney } from "~/shared/lib/money";
 import { Card, EmptyState, ErrorState, Input, ProgressBar, Skeleton } from "~/shared/ui";
@@ -52,9 +53,15 @@ const DiscoverPage: Component = () => {
                         <div
                           class="relative h-24"
                           style={{ background: `linear-gradient(160deg, ${c.brandColor}, color-mix(in srgb, ${c.brandColor} 55%, black))` }}>
-                          <span class="absolute bottom-3 left-3 inline-flex size-8 items-center justify-center rounded-lg bg-white/20 text-sm font-bold text-white backdrop-blur-sm">
-                            {c.logoUrl || c.name.slice(0, 2).toUpperCase()}
-                          </span>
+                          <Show
+                            when={c.logoUrl?.startsWith("/")}
+                            fallback={
+                              <span class="absolute bottom-3 left-3 inline-flex size-8 items-center justify-center rounded-lg bg-white/20 text-sm font-bold text-white backdrop-blur-sm">
+                                {c.logoUrl || c.name.slice(0, 2).toUpperCase()}
+                              </span>
+                            }>
+                            <img src={`${env.apiBaseUrl}${c.logoUrl}`} alt="" class="absolute bottom-3 left-3 size-8 rounded-lg object-cover" />
+                          </Show>
                         </div>
                         <div class="space-y-2 p-4">
                           <p class="font-sans text-label uppercase tracking-wide text-fg-muted">{c.cause}</p>

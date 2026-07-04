@@ -7,6 +7,7 @@ import { Show } from "solid-js";
 import type { Component, ParentComponent } from "solid-js";
 
 import { t } from "~/shared/i18n";
+import { env } from "~/shared/config/env";
 import { PrefsControls } from "~/shared/prefs";
 import type { CurrencyCode } from "~/shared/api";
 import { PageTransition } from "~/shared/motion";
@@ -33,9 +34,15 @@ const DonorShell: ParentComponent = (props) => {
             <header class="border-b border-border bg-surface-raised">
               <div class="mx-auto flex max-w-md items-center justify-between gap-2 px-4 py-3">
                 <A href={`/c/${campaign().slug}`} class="flex items-center gap-2 font-display text-h3 font-semibold text-fg">
-                  <span class="inline-flex size-6 items-center justify-center rounded-md bg-brand text-[11px] font-bold text-brand-fg">
-                    {campaign().logoUrl || campaign().name.slice(0, 2).toUpperCase()}
-                  </span>
+                  <Show
+                    when={campaign().logoUrl?.startsWith("/")}
+                    fallback={
+                      <span class="inline-flex size-6 items-center justify-center rounded-md bg-brand text-[11px] font-bold text-brand-fg">
+                        {campaign().logoUrl || campaign().name.slice(0, 2).toUpperCase()}
+                      </span>
+                    }>
+                    <img src={`${env.apiBaseUrl}${campaign().logoUrl}`} alt="" class="size-6 rounded-md object-cover" />
+                  </Show>
                   {campaign().name}
                 </A>
                 {/* One row, never wrapped — the currency picker sits beside the gear. */}
