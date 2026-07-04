@@ -6,7 +6,7 @@ import { getDashboardStats } from "~/shared/api";
 import { formatMoney } from "~/shared/lib/money";
 import type { DonationCreatedEvent } from "~/shared/api";
 import { createDonationEvents } from "~/shared/lib/useSSE";
-import { Badge, Card, Chart, ErrorState, Skeleton, StatCard } from "~/shared/ui";
+import { Badge, Card, Chart, ErrorState, ProgressBar, Skeleton, StatCard } from "~/shared/ui";
 
 const sourceBadgeVariant = { web: "neutral", kiosk: "positive" } as const;
 
@@ -32,7 +32,8 @@ const DashboardPage: Component = () => {
     if (trend.length < 2) return undefined;
     const current = trend.slice(-30);
     const previous = trend.slice(-60, -30);
-    const totals = (points: typeof trend) => points.reduce((acc, p) => ({ total: acc.total + p.totalEURMinor, count: acc.count + p.count }), { total: 0, count: 0 });
+    const totals = (points: typeof trend) =>
+      points.reduce((acc, p) => ({ total: acc.total + p.totalEURMinor, count: acc.count + p.count }), { total: 0, count: 0 });
     const cur = totals(current);
     const prev = totals(previous);
     const pct = (now: number, before: number) => (before > 0 ? ((now - before) / before) * 100 : now > 0 ? 100 : 0);
@@ -100,25 +101,44 @@ const DashboardPage: Component = () => {
       </div>
 
       <Show
-        when={!stats.loading}
+        when={stats() || !stats.loading}
         fallback={
           <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
             <For each={[0, 1, 2, 3]}>{() => <Skeleton variant="block" class="h-24" />}</For>
           </div>
         }>
         <Show when={!stats.error} fallback={<ErrorState error={stats.error} />}>
-          <div class="grid grid-cols-2 gap-3 lg:grid-cols-5">
-            <StatCard label={t("dashboard.raisedThisMonth")} value={formatMoney(totalEUR(), "EUR")} />
-            <StatCard label={t("dashboard.last30Days")} value={formatMoney(monthDelta()?.currentTotal ?? 0, "EUR")} delta={deltaFor(monthDelta()?.pct)} />
+          {/* The four M2.3 headline stats: total raised, donations, average gift, progress vs goal. */}
+          <div class="grid grid-cols-2 gap-3 lg:grid-cols-4 transition-all duration-300">
+            <StatCard label={t("dashboard.raisedThisMonth")} value={formatMoney(totalEUR(), "EUR")} delta={deltaFor(monthDelta()?.pct)} />
             <StatCard label={t("dashboard.donations")} value={donationCount() + liveTotal()} delta={deltaFor(monthDelta()?.countPct)} />
             <StatCard label={t("dashboard.avgGift")} value={formatMoney(avgGiftMinor(), "EUR")} delta={deltaFor(monthDelta()?.avgPct)} />
             <StatCard
-              label={t("dashboard.activeCampaigns")}
-              value={stats()?.activeCampaignCount ?? 0}
+              label={t("dashboard.progressVsGoal")}
+              value={`${Math.round(stats()?.goalProgressPct ?? 0)}%`}
               live={connected()}
-              hint={t("dashboard.updatedJustNow")}
+              hint={t("dashboard.ofGoal", { amount: formatMoney(stats()?.goalEURMinor ?? 0, "EUR") })}
             />
           </div>
+
+          {/* Per-campaign progress lines (reference layout's large middle card). */}
+          <Card padding="md" class="space-y-3">
+            <h2 class="font-display text-h3 font-semibold text-fg">{t("dashboard.campaignProgress")}</h2>
+            <For each={stats()?.topCampaigns ?? []}>
+              {(c) => (
+                <div class="space-y-1">
+                  <div class="flex items-baseline justify-between gap-3 font-sans text-fs-sm">
+                    <span class="min-w-0 truncate text-fg">{c.name}</span>
+                    <span class="shrink-0 font-mono tabular-nums text-fg-muted">
+                      {formatMoney(c.raisedEURMinor, "EUR")}
+                      <Show when={c.targetEURMinor > 0}> · {Math.round((c.raisedEURMinor / c.targetEURMinor) * 100)}%</Show>
+                    </span>
+                  </div>
+                  <ProgressBar value={c.targetEURMinor > 0 ? (c.raisedEURMinor / c.targetEURMinor) * 100 : 0} />
+                </div>
+              )}
+            </For>
+          </Card>
 
           <div class="grid grid-cols-1 gap-4 lg:grid-cols-[1.6fr_1fr]">
             <Card padding="md">
@@ -129,10 +149,7 @@ const DashboardPage: Component = () => {
                 options={{
                   plugins: { legend: { display: false } },
                   // 90 daily labels are unreadable in this footprint — thin the axes out.
-                  scales: {
-                    x: { ticks: { maxTicksLimit: 6, maxRotation: 0, autoSkip: true }, grid: { display: false } },
-                    y: { ticks: { maxTicksLimit: 4 } },
-                  },
+                  scales: { x: { ticks: { maxTicksLimit: 6, maxRotation: 0, autoSkip: true }, grid: { display: false } }, y: { ticks: { maxTicksLimit: 4 } } },
                 }}
                 class="h-40"
               />

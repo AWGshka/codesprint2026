@@ -55,9 +55,24 @@ export const routes: RouteDefinition[] = [
     children: [
       { path: "/", component: AdminDashboardPage },
       { path: "/campaigns", component: CampaignsListPage },
-      { path: "/campaigns/new", component: CampaignFormPage },
+      {
+        // Campaign management is Charity-Admin-only (auditors/volunteers can still view the list).
+        path: "/campaigns/new",
+        component: () => (
+          <RequireRole roles={["admin"]}>
+            <CampaignFormPage />
+          </RequireRole>
+        ),
+      },
       { path: "/campaigns/:id", component: CampaignDetailPage },
-      { path: "/campaigns/:id/edit", component: CampaignFormPage },
+      {
+        path: "/campaigns/:id/edit",
+        component: () => (
+          <RequireRole roles={["admin"]}>
+            <CampaignFormPage />
+          </RequireRole>
+        ),
+      },
       { path: "/ledger", component: LedgerPage },
       { path: "/reconciliation", component: ReconciliationPage },
       { path: "/audit", component: AuditPage },

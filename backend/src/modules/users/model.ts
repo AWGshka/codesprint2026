@@ -1,6 +1,6 @@
 import { t } from "elysia";
 
-export const RoleSchema = t.Union([t.Literal("viewer"), t.Literal("manager"), t.Literal("admin")]);
+export const RoleSchema = t.Union([t.Literal("auditor"), t.Literal("volunteer"), t.Literal("admin")]);
 
 export const UserSchema = t.Object({
   id: t.String(),

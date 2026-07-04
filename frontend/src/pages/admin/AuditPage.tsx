@@ -13,6 +13,9 @@ const ACTIONS: AuditAction[] = [
   "campaign.delete",
   "user.role_change",
   "reconciliation.run",
+  "reconciliation.match",
+  "reconciliation.automatch",
+  "donation.recorded",
   "ledger.export.csv",
   "ledger.export.pdf",
   "auth.login",
@@ -27,6 +30,9 @@ const actionLabelKey: Record<
   | "admin.auditAction.campaignDelete"
   | "admin.auditAction.userRoleChange"
   | "admin.auditAction.reconciliationRun"
+  | "admin.auditAction.reconciliationMatch"
+  | "admin.auditAction.reconciliationAutomatch"
+  | "admin.auditAction.donationRecorded"
   | "admin.auditAction.ledgerExportCsv"
   | "admin.auditAction.ledgerExportPdf"
   | "admin.auditAction.authLogin"
@@ -36,6 +42,9 @@ const actionLabelKey: Record<
   "campaign.delete": "admin.auditAction.campaignDelete",
   "user.role_change": "admin.auditAction.userRoleChange",
   "reconciliation.run": "admin.auditAction.reconciliationRun",
+  "reconciliation.match": "admin.auditAction.reconciliationMatch",
+  "reconciliation.automatch": "admin.auditAction.reconciliationAutomatch",
+  "donation.recorded": "admin.auditAction.donationRecorded",
   "ledger.export.csv": "admin.auditAction.ledgerExportCsv",
   "ledger.export.pdf": "admin.auditAction.ledgerExportPdf",
   "auth.login": "admin.auditAction.authLogin",
@@ -78,6 +87,11 @@ const describeDetails = (row: AuditLog): string[] => {
   }
   if (row.action === "campaign.create" && typeof meta.slug === "string") return [`/c/${meta.slug}`];
   if (typeof meta.rowCount === "number") return [`${meta.rowCount} rows`];
+  if (row.action === "donation.recorded" && typeof meta.amountMinor === "number") {
+    return [`${meta.status ?? ""} ${(meta.amountMinor / 100).toFixed(2)} ${meta.currency ?? ""}`.trim()];
+  }
+  if (row.action === "reconciliation.automatch" && typeof meta.matchedCount === "number") return [`${meta.matchedCount} matched`];
+  if (row.action === "reconciliation.match" && typeof meta.classification === "string") return [String(meta.classification)];
   return [];
 };
 

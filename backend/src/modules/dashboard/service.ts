@@ -49,13 +49,31 @@ export abstract class DashboardService {
     }
 
     const [activeRow] = await db.select({ total: count() }).from(campaigns).where(eq(campaigns.status, "active"));
-    const campaignRows = await db.select({ id: campaigns.id, name: campaigns.name }).from(campaigns);
-    const nameById = new Map(campaignRows.map((c) => [c.id, c.name]));
+    const campaignRows = await db
+      .select({ id: campaigns.id, name: campaigns.name, targetMinor: campaigns.targetMinor, currency: campaigns.currency, status: campaigns.status })
+      .from(campaigns);
+    const campaignById = new Map(campaignRows.map((c) => [c.id, c]));
+
+    const targetEUROf = (c: (typeof campaignRows)[number] | undefined) =>
+      c ? toEURMinor(c.targetMinor, isSupportedCurrency(c.currency) ? c.currency : "EUR") : 0;
 
     const topCampaigns = [...perCampaign.entries()]
-      .map(([campaignId, v]) => ({ campaignId, name: nameById.get(campaignId) ?? "Unknown", raisedEURMinor: v.raisedEURMinor, donationCount: v.count }))
+      .map(([campaignId, v]) => ({
+        campaignId,
+        name: campaignById.get(campaignId)?.name ?? "Unknown",
+        raisedEURMinor: v.raisedEURMinor,
+        targetEURMinor: targetEUROf(campaignById.get(campaignId)),
+        donationCount: v.count,
+      }))
       .sort((a, b) => b.raisedEURMinor - a.raisedEURMinor)
       .slice(0, 5);
+
+    // Progress vs goal (M2.3): raised on active campaigns / summed targets of
+    // active campaigns, both through the EUR bridge.
+    const activeCampaigns = campaignRows.filter((c) => c.status === "active");
+    const goalEURMinor = activeCampaigns.reduce((sum, c) => sum + targetEUROf(c), 0);
+    const goalRaisedEURMinor = activeCampaigns.reduce((sum, c) => sum + (perCampaign.get(c.id)?.raisedEURMinor ?? 0), 0);
+    const goalProgressPct = goalEURMinor > 0 ? (goalRaisedEURMinor / goalEURMinor) * 100 : 0;
 
     const recentRows = await db
       .select({ donation: donations, campaignName: campaigns.name })
@@ -82,6 +100,9 @@ export abstract class DashboardService {
       totalEURMinor,
       donationCount: completed.length,
       activeCampaignCount: activeRow?.total ?? 0,
+      goalEURMinor,
+      goalRaisedEURMinor,
+      goalProgressPct,
       topCampaigns,
       recentDonations,
       trend,

@@ -4,8 +4,9 @@ import type { Component } from "solid-js";
 import { Show, createMemo } from "solid-js";
 
 import { t } from "~/shared/i18n";
-import { Banner, Button, Card, ProgressBar } from "~/shared/ui";
+import { SupportersWall } from "~/app/donor/SupportersWall";
 import { convertMinor, formatMoney } from "~/shared/lib/money";
+import { Banner, Button, Card, ProgressBar } from "~/shared/ui";
 import { useDonorCampaign } from "~/app/donor/DonorCampaignContext";
 
 const CampaignLandingPage: Component = () => {
@@ -71,6 +72,12 @@ const CampaignLandingPage: Component = () => {
           <Show when={campaign().status === "ended"}>
             <Banner variant="neutral">{t("donor.campaignEnded")}</Banner>
           </Show>
+
+          {/* Live supporters wall (S1.3) — names appear here the moment an
+              opted-in gift completes, streamed over the public SSE channel. */}
+          <Card padding="md" class="mt-5">
+            <SupportersWall slug={campaign().slug} />
+          </Card>
         </div>
       )}
     </Show>

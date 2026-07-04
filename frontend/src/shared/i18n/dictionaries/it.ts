@@ -1,4 +1,4 @@
-// Italian — full dictionary mirroring `en`. Missing keys fall back to `en` (context.ts).
+// Italian - full dictionary mirroring `en`. Missing keys fall back to `en` (context.ts).
 export const it = {
   nav: {
     home: "Home",
@@ -76,7 +76,8 @@ export const it = {
     kioskTapToStart: "Tocca per iniziare",
     kioskTapCard: "Avvicina la tua carta",
     kioskTapHint: "Avvicina la carta o il telefono al lettore.",
-    kioskNfcHint: "NFC pronto - avvicina una carta qualsiasi al retro di questo telefono. Solo demo: nessun dato della carta viene letto e nulla viene addebitato.",
+    kioskNfcHint:
+      "NFC pronto - avvicina una carta qualsiasi al retro di questo telefono. Solo demo: nessun dato della carta viene letto e nulla viene addebitato.",
     kioskEmulate: "Simula un tap (demo)",
     kioskReading: "Lettura carta… pagamento in corso.",
     kioskThanks: "Grazie per la tua donazione",
@@ -88,6 +89,20 @@ export const it = {
     tagline: "Donazioni contactless per le cause intorno a te",
     intro:
       "GiveTap trasforma ogni campagna in un'esperienza tap-to-give. Le associazioni pubblicano una pagina personalizzata in pochi minuti; i donatori donano in pochi secondi dal telefono, da un link condiviso o dal chiosco di un volontario - senza account, senza app, con ricevuta immediata.",
+    terminalCardTitle: "Terminale donazioni",
+    terminalCardSubtitle: "Per donatori e volontari sul campo",
+    terminalFeature1: "Pagine campagna personalizzate con importi suggeriti e liberi",
+    terminalFeature2: "Tap-to-pay simulato e pagamenti carta nella sandbox Mastercard",
+    terminalFeature3: "Multivaluta (EUR primario) con ricevute via email o SMS",
+    terminalFeature4: "Muro dei sostenitori, dichiarazione Gift Aid e arrotondamento a 10 €",
+    openTerminal: "Apri il terminale donazioni",
+    adminCardTitle: "Console di amministrazione",
+    adminCardSubtitle: "Per il back office dell'associazione",
+    adminFeature1: "Accesso per ruoli: Auditor, Volontario, Admin",
+    adminFeature2: "Dashboard live - totali, donatori, donazione media, progresso vs obiettivo",
+    adminFeature3: "Registro filtrabile con esportazione CSV e PDF",
+    adminFeature4: "Riconciliazione sandbox e registro attività completo",
+    openAdmin: "Apri la console di amministrazione",
     howItWorksTitle: "Come funziona",
     step1Title: "Scegli una causa",
     step1Body: "Sfoglia le campagne attive su Scopri, oppure scansiona il codice QR di una campagna.",
@@ -137,7 +152,7 @@ export const it = {
     genericError: "Qualcosa è andato storto",
     adminLoginTitle: "Console di amministrazione",
     adminLoginSubtitle: "Accedi con il tuo account staff GiveTap.",
-    demoCredentials: "Demo: viewer / manager / admin, password demo1234",
+    demoCredentials: "Password demo per ogni profilo: demo1234",
   },
   admin: {
     title: "Console admin",
@@ -173,7 +188,8 @@ export const it = {
     createdAt: "Creata",
     updatedAt: "Aggiornata",
     confirmDeleteCampaign: "Eliminare questa campagna?",
-    confirmDeleteCampaignBody: "Operazione irreversibile. Le campagne con donazioni non possono essere eliminate - archiviale impostando lo stato su terminata.",
+    confirmDeleteCampaignBody:
+      "Operazione irreversibile. Le campagne con donazioni non possono essere eliminate - archiviale impostando lo stato su terminata.",
     campaignHasDonations: "Questa campagna ha donazioni e non può essere eliminata. Imposta invece lo stato su terminata.",
     filters: "Filtri",
     search: "Cerca",

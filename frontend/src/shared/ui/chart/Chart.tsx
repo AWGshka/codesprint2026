@@ -54,9 +54,7 @@ export const Chart: Component<ChartProps> = (props) => {
         maintainAspectRatio: false,
         animation: reducedMotion ? false : undefined,
         scales:
-          type === "doughnut"
-            ? undefined
-            : { x: { ticks: { color: tick }, grid: { color: grid } }, y: { ticks: { color: tick }, grid: { color: grid } } },
+          type === "doughnut" ? undefined : { x: { ticks: { color: tick }, grid: { color: grid } }, y: { ticks: { color: tick }, grid: { color: grid } } },
         ...options,
       },
     });

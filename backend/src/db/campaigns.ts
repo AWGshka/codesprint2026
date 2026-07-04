@@ -7,7 +7,9 @@ import { user } from "~/db/auth-schema";
 export type CampaignStatus = "draft" | "active" | "paused" | "ended";
 
 // Subset of donation cadences a campaign can offer on its give flow.
-export type Frequency = "one_time" | "monthly" | "roundup";
+// Round-up is not a cadence: it's a per-donation flag (donations.roundedUp)
+// that bumps the charged amount to the next multiple of 10.
+export type Frequency = "one_time" | "monthly";
 
 export const campaigns = sqliteTable(
   "campaigns",
@@ -29,6 +31,9 @@ export const campaigns = sqliteTable(
     presetsMinor: text("presets_minor", { mode: "json" }).notNull().$type<number[]>(),
     allowCustom: integer("allow_custom", { mode: "boolean" }).notNull().default(true),
     frequencies: text("frequencies", { mode: "json" }).notNull().$type<Frequency[]>(),
+    // Campaign run window (M2.2) — both optional: an open-ended campaign has neither.
+    startsAt: integer("starts_at", { mode: "timestamp" }),
+    endsAt: integer("ends_at", { mode: "timestamp" }),
     createdBy: text("created_by")
       .notNull()
       .references(() => user.id),

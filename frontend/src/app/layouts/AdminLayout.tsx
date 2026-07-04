@@ -21,6 +21,7 @@ import {
   ImpactIcon,
   LedgerIcon,
   ReconcileIcon,
+  TerminalIcon,
   UsersIcon,
 } from "~/shared/icons";
 
@@ -28,7 +29,8 @@ const alwaysShow = (_role: UserRole | undefined) => true;
 
 const navItems: {
   href: string;
-  labelKey: "admin.title" | "admin.campaigns" | "admin.ledger" | "admin.reconciliation" | "admin.auditLog" | "admin.impact" | "admin.users";
+  labelKey:
+    "admin.title" | "admin.campaigns" | "admin.ledger" | "admin.reconciliation" | "admin.auditLog" | "admin.impact" | "admin.users" | "admin.openTerminal";
   icon: Component<{ class?: string }>;
   end: boolean;
   show: (role: UserRole | undefined) => boolean;
@@ -40,6 +42,9 @@ const navItems: {
   { href: "/admin/audit", labelKey: "admin.auditLog", icon: AuditIcon, end: false, show: alwaysShow },
   { href: "/admin/impact", labelKey: "admin.impact", icon: ImpactIcon, end: false, show: alwaysShow },
   { href: "/admin/users", labelKey: "admin.users", icon: UsersIcon, end: false, show: can.manageUsers },
+  // Volunteer+ shortcut into the donor terminal (their session keeps the audit
+  // trail attributing recorded donations to them).
+  { href: "/discover", labelKey: "admin.openTerminal", icon: TerminalIcon, end: false, show: can.recordDonation },
 ];
 
 const SIDEBAR_KEY = "gt-admin-sidebar";

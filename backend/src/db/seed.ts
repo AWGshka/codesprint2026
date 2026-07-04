@@ -3,11 +3,13 @@
 // anything twice.
 //
 // EXPECTED RECONCILIATION COUNTS (drives the /admin/reconciliation demo):
-//   matched            = all "completed" donations that got a mirrored
-//                         settlement with the same paymentRef/amount/currency
+//   exact matches       = all "completed" donations that got a mirrored
+//                         settlement with the same paymentRef/amount/currency;
+//                         all but 6 arrive pre-reconciled (persisted matches)
 //   missingInProcessor  = 3   (completed donations with NO settlement row)
 //   missingInApp        = 3   (settlement rows with NO matching donation)
 //   mismatched          = 3   (settlement exists but amountMinor differs)
+//   awaiting            = 6 exact + the 9 discrepancies above
 // Total processor_settlements rows = (# completed donations) - 3 (missing) + 3 (mismatch, still 1:1) + 3 (extra missingInApp)
 // i.e. settlements = completedDonations - missingInProcessor + missingInApp.
 import { eq } from "drizzle-orm";
@@ -17,6 +19,7 @@ import { auth } from "~/auth";
 import { user } from "~/db/auth-schema";
 import { auditLogs } from "~/db/audit-logs";
 import { processorSettlements } from "~/db/processor-settlements";
+import { reconciliationMatches } from "~/db/reconciliation-matches";
 import { type CampaignStatus, type Frequency, campaigns } from "~/db/campaigns";
 import { type DonationSource, type DonationStatus, donations } from "~/db/donations";
 
@@ -50,6 +53,7 @@ const initials = (name: string) =>
     .slice(0, 4) || "GT";
 
 const daysAgo = (days: number, hourOffset = 0) => new Date(Date.now() - days * 86_400_000 - hourOffset * 3_600_000);
+const daysAhead = (days: number) => new Date(Date.now() + days * 86_400_000);
 
 type CampaignSeed = {
   slug: string;
@@ -89,7 +93,7 @@ const CAMPAIGN_SEEDS: CampaignSeed[] = [
     status: "active",
     brandColor: "#1E6FB8",
     presetsMinor: [500, 1500, 3000, 6000],
-    frequencies: ["one_time", "monthly", "roundup"],
+    frequencies: ["one_time", "monthly"],
   },
   {
     slug: "hope-children",
@@ -138,7 +142,7 @@ const CAMPAIGN_SEEDS: CampaignSeed[] = [
     status: "active",
     brandColor: "#7A3FA0",
     presetsMinor: [2000, 5000, 10000, 25000],
-    frequencies: ["one_time", "monthly", "roundup"],
+    frequencies: ["one_time", "monthly"],
   },
   {
     slug: "education-all",
@@ -198,7 +202,7 @@ const CAMPAIGN_SEEDS: CampaignSeed[] = [
     status: "active",
     brandColor: "#B23A6B",
     presetsMinor: [500, 1000, 2000, 4000],
-    frequencies: ["one_time", "roundup"],
+    frequencies: ["one_time"],
   },
   {
     slug: "wildlife-conservation",
@@ -215,8 +219,8 @@ const CAMPAIGN_SEEDS: CampaignSeed[] = [
 ];
 
 const DEMO_USERS = [
-  { username: "viewer", firstName: "Vera", lastName: "Vella", role: "viewer" as const },
-  { username: "manager", firstName: "Mario", lastName: "Grech", role: "manager" as const },
+  { username: "auditor", firstName: "Vera", lastName: "Vella", role: "auditor" as const },
+  { username: "volunteer", firstName: "Mario", lastName: "Grech", role: "volunteer" as const },
   { username: "admin", firstName: "Alexandra", lastName: "Borg", role: "admin" as const },
 ];
 const DEMO_PASSWORD = "demo1234";
@@ -256,19 +260,14 @@ const seed = async () => {
         password: DEMO_PASSWORD,
         name: demoName(demoUser),
         role: demoUser.role,
-        data: {
-          username: demoUser.username,
-          displayUsername: demoUser.username,
-          firstName: demoUser.firstName,
-          lastName: demoUser.lastName,
-        },
+        data: { username: demoUser.username, displayUsername: demoUser.username, firstName: demoUser.firstName, lastName: demoUser.lastName },
       },
     });
   }
 
   const adminUserRow = await db.query.user.findFirst({ where: eq(user.username, "admin") });
-  const managerUserRow = await db.query.user.findFirst({ where: eq(user.username, "manager") });
-  if (!adminUserRow || !managerUserRow) throw new Error("Seed failed: demo users were not created.");
+  const volunteerUserRow = await db.query.user.findFirst({ where: eq(user.username, "volunteer") });
+  if (!adminUserRow || !volunteerUserRow) throw new Error("Seed failed: demo users were not created.");
 
   // 2. Campaigns — 12 across EUR/USD/GBP, varied status/branding/presets/frequencies.
   console.log("Seeding campaigns...");
@@ -290,7 +289,11 @@ const seed = async () => {
         presetsMinor: c.presetsMinor,
         allowCustom: true,
         frequencies: c.frequencies,
-        createdBy: i % 2 === 0 ? adminUserRow.id : managerUserRow.id,
+        // Run window: ended campaigns closed recently; live ones run into the
+        // future, staggered per index so lists show varied dates.
+        startsAt: c.status === "ended" ? daysAgo(180) : daysAgo(30 + i * 5),
+        endsAt: c.status === "ended" ? daysAgo(10) : daysAhead(60 + i * 10),
+        createdBy: i % 2 === 0 ? adminUserRow.id : volunteerUserRow.id,
       })),
     )
     .returning();
@@ -302,9 +305,15 @@ const seed = async () => {
   const usedReferences = new Set<string>();
   const donationRows: (typeof donations.$inferInsert)[] = [];
   const DONATION_COUNT = 260;
-  const STATUS_WEIGHTS: DonationStatus[] = [...Array(90).fill("completed"), ...Array(6).fill("pending"), ...Array(4).fill("failed")];
+  const STATUS_WEIGHTS: DonationStatus[] = [
+    ...Array(88).fill("completed"),
+    ...Array(5).fill("declined"),
+    ...Array(3).fill("refunded"),
+    ...Array(4).fill("offline"),
+  ];
   const SOURCE_WEIGHTS: DonationSource[] = [...Array(7).fill("web"), ...Array(3).fill("kiosk")];
   const CURRENCIES = ["EUR", "USD", "GBP"] as const;
+  const DONOR_NAMES = ["Alex Kit", "Sam Farrugia", "Jordan Micallef", "Maria Vella", "Chen Wei", "Fatima Zahra", "Liam Borg", "Nora Grech"];
 
   for (let i = 0; i < DONATION_COUNT; i++) {
     const campaign = pick(publishedCampaigns);
@@ -318,22 +327,31 @@ const seed = async () => {
     const currency = rand() < 0.85 ? campaign.currency : pick(CURRENCIES);
     const frequency = pick(campaign.frequencies as Frequency[]);
     const preset = pick(campaign.presetsMinor as number[]);
-    const amountMinor = rand() < 0.7 ? preset : randomInt(300, 20000);
     const status = pick(STATUS_WEIGHTS);
     const source = pick(SOURCE_WEIGHTS);
     const createdAt = daysAgo(randomInt(0, 89), randomInt(0, 23));
     const guest = rand() < 0.35;
 
+    // Donor choices: ~15% rounded up to the next €10-equivalent, named donors
+    // sometimes tick Gift Aid and the supporters wall.
+    const roundedUp = rand() < 0.15;
+    const rawAmount = rand() < 0.7 ? preset : randomInt(300, 20000);
+    const amountMinor = roundedUp ? Math.ceil(rawAmount / 1000) * 1000 : rawAmount;
+
     donationRows.push({
       reference,
       campaignId: campaign.id,
-      donorName: guest ? null : pick(["Alex", "Sam", "Jordan", "Maria", "Chen", "Fatima", "Liam", "Nora"]),
+      donorName: guest ? null : pick(DONOR_NAMES),
       donorEmail: guest ? null : `donor${i}@example.com`,
       amountMinor,
       currency,
       frequency,
       status,
       source,
+      method: source === "kiosk" ? "tap" : "card",
+      roundedUp,
+      giftAid: !guest && rand() < 0.3,
+      showOnWall: !guest && rand() < 0.6,
       paymentRef: crypto.randomUUID(),
       createdAt,
     });
@@ -381,7 +399,21 @@ const seed = async () => {
 
   await db.insert(processorSettlements).values(settlementRows);
 
-  // 5. A couple of audit rows so /admin/audit has something to show from day one.
+  // 5. Persisted reconciliation state: most exact matches arrive pre-reconciled
+  // (as if auto-match ran on an earlier batch), leaving AWAITING_EXACT exact
+  // pairs + all 9 discrepancies awaiting review — so both "Auto-match all" and
+  // per-row "Reconcile" have something to do in the demo.
+  console.log("Seeding reconciliation matches...");
+  const AWAITING_EXACT = 6;
+  const exactRefs = completed.map((d) => d.paymentRef as string).filter((ref) => !missingInProcessorRefs.has(ref) && !mismatchedRefs.has(ref));
+  const preMatchedRefs = exactRefs.slice(0, Math.max(0, exactRefs.length - AWAITING_EXACT));
+  if (preMatchedRefs.length > 0) {
+    await db
+      .insert(reconciliationMatches)
+      .values(preMatchedRefs.map((paymentRef) => ({ paymentRef, method: "auto" as const, matchedBy: "admin@demo.gt", createdAt: daysAgo(randomInt(1, 30)) })));
+  }
+
+  // 6. A couple of audit rows so /admin/audit has something to show from day one.
   console.log("Seeding audit log seed rows...");
   await db.insert(auditLogs).values([
     {
@@ -394,11 +426,11 @@ const seed = async () => {
       createdAt: daysAgo(89),
     },
     {
-      actorId: managerUserRow.id,
-      actorEmail: `manager@demo.gt`,
+      actorId: volunteerUserRow.id,
+      actorEmail: `volunteer@demo.gt`,
       action: "auth.login",
       targetType: "auth",
-      targetId: managerUserRow.id,
+      targetId: volunteerUserRow.id,
       metadata: { seed: true },
       createdAt: daysAgo(1),
     },
@@ -406,7 +438,7 @@ const seed = async () => {
 
   console.log(
     `Seed complete: ${DEMO_USERS.length} users, ${insertedCampaigns.length} campaigns, ${donationRows.length} donations, ${settlementRows.length} settlements ` +
-      `(missingInProcessor=${MISSING_IN_PROCESSOR}, missingInApp=${MISSING_IN_APP}, mismatched=${MISMATCHED}).`,
+      `(missingInProcessor=${MISSING_IN_PROCESSOR}, missingInApp=${MISSING_IN_APP}, mismatched=${MISMATCHED}, preMatched=${preMatchedRefs.length}).`,
   );
 };
 

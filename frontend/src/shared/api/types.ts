@@ -5,10 +5,13 @@ export interface HealthResponse {
 
 export type CurrencyCode = "EUR" | "USD" | "GBP";
 export type CampaignStatus = "draft" | "active" | "paused" | "ended";
-export type DonationFrequency = "one_time" | "monthly" | "roundup";
-export type DonationStatus = "completed" | "pending" | "failed";
+export type DonationFrequency = "one_time" | "monthly";
+export type DonationStatus = "completed" | "declined" | "refunded" | "offline";
 export type DonationSource = "web" | "kiosk";
-export type UserRole = "viewer" | "manager" | "admin";
+export type DonationMethod = "card" | "tap";
+/** Terminal tap simulation outcome; "cancelled" is handled client-side and never sent. */
+export type TapOutcome = "approved" | "declined" | "offline";
+export type UserRole = "auditor" | "volunteer" | "admin";
 export type ReconciliationStatus = "matched" | "mismatched" | "missingInProcessor" | "missingInApp";
 
 export interface CampaignPublic {
@@ -27,6 +30,8 @@ export interface CampaignPublic {
   presetsMinor: number[];
   allowCustom: boolean;
   frequencies: DonationFrequency[];
+  startsAt?: string | null;
+  endsAt?: string | null;
 }
 
 export interface CampaignWithProgress extends CampaignPublic {
@@ -57,6 +62,8 @@ export interface CreateCampaignBody {
   presetsMinor: number[];
   allowCustom?: boolean;
   frequencies: DonationFrequency[];
+  startsAt?: string | null;
+  endsAt?: string | null;
 }
 
 export interface Paged<T> {
@@ -77,12 +84,18 @@ export interface Donation {
   frequency: DonationFrequency;
   status: DonationStatus;
   source: DonationSource;
+  method: DonationMethod;
+  roundedUp: boolean;
+  giftAid: boolean;
+  showOnWall: boolean;
   createdAt: string;
 }
 
 export interface DonationReceipt extends Donation {
   campaignName: string;
   campaignSlug: string;
+  /** Sandbox/processor transaction id. */
+  paymentRef: string;
 }
 
 export interface DonationLedgerRow extends Donation {
@@ -97,13 +110,30 @@ export interface CreateDonationBody {
   donorName?: string;
   donorEmail?: string;
   source: DonationSource;
+  method?: DonationMethod;
+  roundedUp?: boolean;
+  giftAid?: boolean;
+  showOnWall?: boolean;
+  outcome?: TapOutcome;
   card?: { last4: string };
 }
 
 export interface CreateDonationResponse {
   reference: string;
-  status: "completed";
+  status: DonationStatus;
   donation: Donation;
+}
+
+export interface Supporter {
+  donorName: string;
+  amountMinor: number;
+  currency: CurrencyCode;
+  createdAt: string;
+}
+
+export interface SendReceiptBody {
+  channel: "email" | "sms";
+  to: string;
 }
 
 export interface DashboardStats {
@@ -111,7 +141,11 @@ export interface DashboardStats {
   totalEURMinor: number;
   donationCount: number;
   activeCampaignCount: number;
-  topCampaigns: { campaignId: string; name: string; raisedEURMinor: number; donationCount: number }[];
+  /** Progress vs goal across active campaigns (EUR bridge). */
+  goalEURMinor: number;
+  goalRaisedEURMinor: number;
+  goalProgressPct: number;
+  topCampaigns: { campaignId: string; name: string; raisedEURMinor: number; targetEURMinor: number; donationCount: number }[];
   recentDonations: { reference: string; campaignName: string; amountMinor: number; currency: CurrencyCode; source: DonationSource; createdAt: string }[];
   trend: { date: string; totalEURMinor: number; count: number }[];
 }
@@ -131,10 +165,14 @@ export interface ReconciliationRow {
   reference: string | null;
   donation: { amountMinor: number; currency: CurrencyCode; status: DonationStatus } | null;
   settlement: { amountMinor: number; currency: CurrencyCode; status: "settled" | "failed" } | null;
+  reconciled: boolean;
+  matchMethod: "auto" | "manual" | null;
+  matchedAt: string | null;
+  occurredAt: string | null;
 }
 
 export interface ReconciliationResult {
-  summary: { matched: number; mismatched: number; missingInProcessor: number; missingInApp: number };
+  summary: { matched: number; awaiting: number; matchRate: number; mismatched: number; missingInProcessor: number; missingInApp: number };
   rows: ReconciliationRow[];
 }
 
@@ -144,6 +182,9 @@ export type AuditAction =
   | "campaign.delete"
   | "user.role_change"
   | "reconciliation.run"
+  | "reconciliation.match"
+  | "reconciliation.automatch"
+  | "donation.recorded"
   | "ledger.export.csv"
   | "ledger.export.pdf"
   | "auth.login";
@@ -192,9 +233,13 @@ export interface BinDetails {
 export interface DonationCreatedEvent {
   reference: string;
   campaignId: string;
+  campaignSlug: string;
   campaignName: string;
   amountMinor: number;
   currency: CurrencyCode;
   source: DonationSource;
+  /** Present only when the donor opted into the supporters wall. */
+  donorName?: string | null;
+  showOnWall?: boolean;
   createdAt: string;
 }

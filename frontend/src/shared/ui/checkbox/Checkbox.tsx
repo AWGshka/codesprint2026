@@ -21,8 +21,7 @@ export const Checkbox: Component<CheckboxProps> = (props) => (
       disabled={props.disabled}
       onChange={(event) => props.onChange(event.currentTarget.checked)}
     />
-    <span
-      class={cn("flex size-4.5 items-center justify-center rounded-[5px]", props.checked ? "bg-brand" : "border border-border-strong bg-surface-raised")}>
+    <span class={cn("flex size-4.5 items-center justify-center rounded-[5px]", props.checked ? "bg-brand" : "border border-border-strong bg-surface-raised")}>
       <Show when={props.checked}>
         <CheckIcon class="size-3 text-white" stroke-width={3} aria-hidden="true" />
       </Show>

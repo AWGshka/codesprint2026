@@ -3,11 +3,11 @@ import { For, Show, createEffect, createMemo, createSignal, onCleanup } from "so
 
 import { t } from "~/shared/i18n";
 import { cn } from "~/shared/lib/cn";
-import { mockPanForTap, nfcAvailable, startNfcTapScan } from "~/shared/lib/nfc";
 import { convertMinor, formatMoney } from "~/shared/lib/money";
-import { Banner, Button, Field, Input, Stepper } from "~/shared/ui";
+import { Banner, Button, Checkbox, Field, Input, Stepper } from "~/shared/ui";
+import { mockPanForTap, nfcAvailable, startNfcTapScan } from "~/shared/lib/nfc";
 import { ApiError, apiErrorCode, createDonation, lookupBin } from "~/shared/api";
-import type { BinDetails, CampaignWithProgress, CreateDonationResponse, CurrencyCode, DonationFrequency } from "~/shared/api";
+import type { BinDetails, CampaignWithProgress, CreateDonationResponse, CurrencyCode, DonationFrequency, TapOutcome } from "~/shared/api";
 
 export interface GiveFlowProps {
   campaign: CampaignWithProgress;
@@ -21,15 +21,14 @@ export interface GiveFlowProps {
   onCancel?: () => void;
 }
 
-type ErrorKind = "declined" | "network" | "other" | undefined;
+type ErrorKind = "declined" | "network" | "offline" | "cancelled" | "other" | undefined;
 
-const frequencyLabelKey: Record<DonationFrequency, "donor.oneTime" | "donor.monthly" | "donor.roundUp"> = {
-  one_time: "donor.oneTime",
-  monthly: "donor.monthly",
-  roundup: "donor.roundUp",
-};
+const frequencyLabelKey: Record<DonationFrequency, "donor.oneTime" | "donor.monthly"> = { one_time: "donor.oneTime", monthly: "donor.monthly" };
 
 const CARD_DIGITS = 16;
+
+// Round-up granularity: the next multiple of 10 major units (€10 / $10 / £10).
+const ROUND_TO_MINOR = 1000;
 
 /** "4242424242420002x" → "4242 4242 4242 0002" — digits only, capped at 16, spaced per group of 4. */
 const formatCardNumber = (raw: string): string =>
@@ -45,6 +44,9 @@ export const GiveFlow: Component<GiveFlowProps> = (props) => {
   const [customAmount, setCustomAmount] = createSignal("");
   const [useCustom, setUseCustom] = createSignal(false);
   const [frequency, setFrequency] = createSignal<DonationFrequency>(props.campaign.frequencies[0] ?? "one_time");
+  const [roundUp, setRoundUp] = createSignal(false);
+  const [giftAid, setGiftAid] = createSignal(false);
+  const [showOnWall, setShowOnWall] = createSignal(false);
   const [donorName, setDonorName] = createSignal("");
   const [donorEmail, setDonorEmail] = createSignal("");
   const [cardNumber, setCardNumber] = createSignal("");
@@ -60,10 +62,16 @@ export const GiveFlow: Component<GiveFlowProps> = (props) => {
   const refreshBinInfo = (digits: string) => {
     if (binTimer) clearTimeout(binTimer);
     if (digits.length < 8) return setBinInfo(null);
-    binTimer = setTimeout(() => lookupBin(digits.slice(0, 8)).then(setBinInfo).catch(() => setBinInfo(null)), 350);
+    binTimer = setTimeout(
+      () =>
+        lookupBin(digits.slice(0, 8))
+          .then(setBinInfo)
+          .catch(() => setBinInfo(null)),
+      350,
+    );
   };
 
-  const amountMinor = createMemo(() => {
+  const baseAmountMinor = createMemo(() => {
     if (useCustom()) {
       const parsed = Math.round(Number.parseFloat(customAmount() || "0") * 100);
       return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
@@ -71,12 +79,25 @@ export const GiveFlow: Component<GiveFlowProps> = (props) => {
     return selectedPreset() ?? 0;
   });
 
-  const canContinueAmount = () => amountMinor() > 0;
-  const canContinuePay = () => cardNumber().replace(/\s/g, "").length === CARD_DIGITS;
+  // What actually gets charged: the chosen amount, optionally bumped to the
+  // next multiple of 10 (S1.1 round-up).
+  const amountMinor = createMemo(() => {
+    const base = baseAmountMinor();
+    if (base <= 0 || !roundUp()) return base;
+    return Math.ceil(base / ROUND_TO_MINOR) * ROUND_TO_MINOR;
+  });
+
+  const wasRoundedUp = () => roundUp() && amountMinor() !== baseAmountMinor();
+
+  // The supporters wall shows names — opting in needs one. On the tap flow the
+  // name is captured right here in step 0; the card flow captures it in step 1.
+  const needsNameHere = () => props.tapToPay && showOnWall();
+  const canContinueAmount = () => amountMinor() > 0 && (!needsNameHere() || donorName().trim().length > 0);
+  const canContinuePay = () => cardNumber().replace(/\s/g, "").length === CARD_DIGITS && (!showOnWall() || donorName().trim().length > 0);
 
   const targetSize = props.big ? "min-h-16 text-h3" : "min-h-13 text-body";
 
-  const submit = async () => {
+  const submit = async (outcome?: TapOutcome) => {
     setSubmitting(true);
     setErrorKind(undefined);
     try {
@@ -85,9 +106,14 @@ export const GiveFlow: Component<GiveFlowProps> = (props) => {
         amountMinor: amountMinor(),
         currency: props.currency,
         frequency: frequency(),
-        donorName: donorName() || undefined,
-        donorEmail: donorEmail() || undefined,
+        donorName: donorName().trim() || undefined,
+        donorEmail: donorEmail().trim() || undefined,
         source: props.source,
+        method: props.tapToPay ? "tap" : "card",
+        roundedUp: wasRoundedUp(),
+        giftAid: giftAid(),
+        showOnWall: showOnWall(),
+        outcome,
         card: { last4 },
       });
       props.onSuccess(result, amountMinor(), props.currency, frequency());
@@ -103,16 +129,27 @@ export const GiveFlow: Component<GiveFlowProps> = (props) => {
     }
   };
 
-  /** Kiosk tap-to-pay: no card entry or review — a tap (real NFC or the demo button) reads a
-   * mock card and pays immediately. Browsers can't read real PANs, so the number is simulated. */
-  const performTap = async (pan = "4242424242424242") => {
+  /** Kiosk tap-to-pay (M1.3/M1.6): a tap — real NFC, or one of the four simulation
+   * buttons — reads a mock card and runs the outcome. "cancelled" never reaches the
+   * server (the donor backed out); declined/offline round-trip so the ledger keeps
+   * a row for every attempt. Browsers can't read real PANs, so the number is simulated. */
+  const performTap = async (outcome: TapOutcome | "cancelled" = "approved", pan = "4242424242424242") => {
     if (tapReading() || submitting()) return;
     setTapReading(true);
     setErrorKind(undefined);
     setCardNumber(formatCardNumber(pan));
+    // "Contacting Mastercard sandbox…" beat so the simulation reads like a real terminal.
     await new Promise((resolve) => setTimeout(resolve, 1200));
     try {
-      await submit();
+      if (outcome === "cancelled") {
+        setErrorKind("cancelled");
+        return;
+      }
+      if (outcome === "offline") {
+        setErrorKind("offline");
+        return;
+      }
+      await submit(outcome === "declined" ? "declined" : undefined);
     } finally {
       setTapReading(false);
     }
@@ -122,12 +159,12 @@ export const GiveFlow: Component<GiveFlowProps> = (props) => {
 
   // Real NFC tap detection (Chrome/Android + secure context): any tag — including a payment
   // card, which surfaces as a reading error — triggers the same simulated payment as the
-  // demo button. Scan runs only while the tap screen is showing.
+  // demo buttons (always the approved path). Scan runs only while the tap screen is showing.
   createEffect(() => {
     if (!props.tapToPay || step() !== 1 || !nfcAvailable()) return;
     let stop: (() => void) | undefined;
     let disposed = false;
-    startNfcTapScan((serial) => performTap(mockPanForTap(serial)))
+    startNfcTapScan((serial) => performTap("approved", mockPanForTap(serial)))
       .then((stopScan) => {
         if (disposed) return stopScan();
         stop = stopScan;
@@ -140,6 +177,13 @@ export const GiveFlow: Component<GiveFlowProps> = (props) => {
       setNfcActive(false);
     });
   });
+
+  const simButtons: { outcome: TapOutcome | "cancelled"; labelKey: "donor.simApproved" | "donor.simDeclined" | "donor.simCancelled" | "donor.simOffline" }[] = [
+    { outcome: "approved", labelKey: "donor.simApproved" },
+    { outcome: "declined", labelKey: "donor.simDeclined" },
+    { outcome: "cancelled", labelKey: "donor.simCancelled" },
+    { outcome: "offline", labelKey: "donor.simOffline" },
+  ];
 
   return (
     <div class="space-y-5">
@@ -215,6 +259,28 @@ export const GiveFlow: Component<GiveFlowProps> = (props) => {
             </div>
           </Show>
 
+          {/* Donor options: round-up (S1.1), supporters wall (S1.3), Gift Aid (S1.2). */}
+          <div class="space-y-3 rounded-md border border-border bg-surface-sunken p-4">
+            <Checkbox checked={roundUp()} onChange={setRoundUp} label={t("donor.roundUpLabel", { amount: formatMoney(ROUND_TO_MINOR, props.currency) })} />
+            <div class="space-y-1">
+              <Checkbox checked={showOnWall()} onChange={setShowOnWall} label={t("donor.showOnWallLabel")} />
+              <p class="pl-7 font-sans text-label text-fg-muted">{t("donor.wallAnonymousHint")}</p>
+            </div>
+            <div class="space-y-1">
+              <Checkbox checked={giftAid()} onChange={setGiftAid} label={t("donor.giftAidLabel")} />
+              <p class="pl-7 font-sans text-label text-fg-muted">{t("donor.giftAidBody")}</p>
+            </div>
+            <Show when={needsNameHere()}>
+              <Field label={t("donor.donorName")}>
+                <Input class={targetSize} value={donorName()} onInput={(e) => setDonorName(e.currentTarget.value)} />
+              </Field>
+            </Show>
+          </div>
+
+          <Show when={wasRoundedUp()}>
+            <p class="font-sans text-label text-fg-muted">{t("donor.roundedUpFrom", { amount: formatMoney(baseAmountMinor(), props.currency) })}</p>
+          </Show>
+
           <Button class={cn("w-full", props.big && "min-h-16 text-h3")} disabled={!canContinueAmount()} onClick={() => setStep(1)}>
             {t("donor.continueLabel")} · {formatMoney(amountMinor(), props.currency)}
           </Button>
@@ -236,24 +302,54 @@ export const GiveFlow: Component<GiveFlowProps> = (props) => {
             </svg>
           </div>
           <p class="font-sans text-body text-fg-muted">
-            {tapReading() ? t("donor.kioskReading") : nfcActive() ? t("donor.kioskNfcHint") : t("donor.kioskTapHint")}
+            {tapReading() ? t("donor.contactingSandbox") : nfcActive() ? t("donor.kioskNfcHint") : t("donor.kioskTapHint")}
           </p>
           <Show when={tapReading()}>
             <p class="font-mono text-h3 tabular-nums text-fg">{cardNumber()}</p>
           </Show>
 
-          <Show when={errorKind()}>
-            <Banner variant="danger">{errorKind() === "network" ? t("donor.networkErrorBody") : errorMessage() || t("common.error")}</Banner>
+          <Show when={errorKind() === "declined"}>
+            <Banner variant="danger">
+              <strong class="font-semibold">{t("donor.paymentDeclined")}</strong> {t("donor.paymentDeclinedBody")}
+            </Banner>
+          </Show>
+          <Show when={errorKind() === "cancelled"}>
+            <Banner variant="warning">
+              <strong class="font-semibold">{t("donor.paymentCancelled")}</strong> {t("donor.tapCancelledBody")}
+            </Banner>
+          </Show>
+          <Show when={errorKind() === "network"}>
+            <Banner variant="warning">{t("donor.networkErrorBody")}</Banner>
+          </Show>
+          <Show when={errorKind() === "offline"}>
+            <Banner variant="warning">
+              <strong class="font-semibold">{t("donor.offlineQueuedTitle")}</strong> {t("donor.offlineQueuedBody")}
+            </Banner>
+          </Show>
+          <Show when={errorKind() === "other"}>
+            <Banner variant="danger">{errorMessage() || t("common.error")}</Banner>
           </Show>
 
-          <div class="flex flex-col gap-2">
-            <Button variant="ghost" size="sm" class="mx-auto" disabled={tapReading()} onClick={() => performTap()}>
-              {t("donor.kioskEmulate")}
-            </Button>
-            <Button variant="secondary" class={cn("w-full", props.big && "min-h-16 text-h3")} disabled={tapReading()} onClick={() => setStep(0)}>
-              {t("donor.back")}
-            </Button>
+          {/* Terminal simulation controls — a real NFC tap always takes the approved path. */}
+          <div class="space-y-2">
+            <p class="font-sans text-label uppercase tracking-wide text-fg-muted">{t("donor.simulateTap")}</p>
+            <div class="grid grid-cols-2 gap-2">
+              <For each={simButtons}>
+                {(sim) => (
+                  <Button variant="secondary" size="sm" class="min-h-11" disabled={tapReading()} onClick={() => performTap(sim.outcome)}>
+                    {t(sim.labelKey)}
+                  </Button>
+                )}
+              </For>
+            </div>
+            <Show when={nfcActive()}>
+              <p class="font-sans text-label text-fg-muted">{t("donor.kioskNfcHint")}</p>
+            </Show>
           </div>
+
+          <Button variant="ghost" class={cn("w-full", props.big && "min-h-16 text-h3")} disabled={tapReading()} onClick={() => setStep(0)}>
+            {t("donor.back")}
+          </Button>
         </section>
       </Show>
 
@@ -280,13 +376,9 @@ export const GiveFlow: Component<GiveFlowProps> = (props) => {
             />
           </Field>
           <Show when={binInfo()}>
-            {(bin) => (
-              <p class="font-sans text-label text-fg-muted">
-                {[bin().fundingSource, bin().issuer, bin().country].filter(Boolean).join(" · ")}
-              </p>
-            )}
+            {(bin) => <p class="font-sans text-label text-fg-muted">{[bin().fundingSource, bin().issuer, bin().country].filter(Boolean).join(" · ")}</p>}
           </Show>
-          <Field label={t("donor.donorName")}>
+          <Field label={showOnWall() ? t("donor.donorName") : `${t("donor.donorName")} (${t("donor.optional")})`}>
             <Input class={targetSize} value={donorName()} onInput={(e) => setDonorName(e.currentTarget.value)} />
           </Field>
           <Field label={`${t("donor.donorEmail")} (${t("donor.optional")})`}>
@@ -315,10 +407,28 @@ export const GiveFlow: Component<GiveFlowProps> = (props) => {
               <dt class="text-fg-muted">{t("donor.amount")}</dt>
               <dd class="font-mono font-semibold tabular-nums text-fg">{formatMoney(amountMinor(), props.currency)}</dd>
             </div>
+            <Show when={wasRoundedUp()}>
+              <div class="flex justify-between">
+                <dt class="text-fg-muted">{t("donor.roundUp")}</dt>
+                <dd class="text-fg">{t("donor.roundedUpFrom", { amount: formatMoney(baseAmountMinor(), props.currency) })}</dd>
+              </div>
+            </Show>
             <div class="flex justify-between">
               <dt class="text-fg-muted">{t("donor.frequency")}</dt>
               <dd class="text-fg">{t(frequencyLabelKey[frequency()])}</dd>
             </div>
+            <Show when={giftAid()}>
+              <div class="flex justify-between">
+                <dt class="text-fg-muted">{t("donor.giftAidShort")}</dt>
+                <dd class="text-fg">{t("common.yes")}</dd>
+              </div>
+            </Show>
+            <Show when={showOnWall()}>
+              <div class="flex justify-between">
+                <dt class="text-fg-muted">{t("donor.supportersWall")}</dt>
+                <dd class="text-fg">{donorName().trim() || t("donor.anonymous")}</dd>
+              </div>
+            </Show>
             <div class="flex justify-between">
               <dt class="text-fg-muted">{t("donor.card")}</dt>
               <dd class="font-mono text-fg">•••• {cardNumber().replace(/\s/g, "").slice(-4).padStart(4, "0")}</dd>
@@ -327,8 +437,7 @@ export const GiveFlow: Component<GiveFlowProps> = (props) => {
 
           <Show when={errorKind() === "declined"}>
             <Banner variant="danger">
-              <strong class="block font-semibold">{t("donor.paymentDeclined")}</strong>
-              {t("donor.paymentDeclinedBody")}
+              <strong class="font-semibold">{t("donor.paymentDeclined")}</strong> {t("donor.paymentDeclinedBody")}
             </Banner>
           </Show>
           <Show when={errorKind() === "network"}>
@@ -350,7 +459,7 @@ export const GiveFlow: Component<GiveFlowProps> = (props) => {
                 {t("donor.tryAnotherCard")}
               </Button>
             </Show>
-            <Button class={cn("flex-1", props.big && "min-h-16 text-h3")} loading={submitting()} onClick={submit}>
+            <Button class={cn("flex-1", props.big && "min-h-16 text-h3")} loading={submitting()} onClick={() => submit()}>
               {t("donor.submitGift")}
             </Button>
           </div>

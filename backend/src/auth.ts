@@ -13,25 +13,32 @@ import { AuditService } from "~/modules/audit/service";
 // `defaultStatements` (user/session) are the admin plugin's own resources —
 // its built-in routes (list/ban/set-role/impersonate/...) check permissions
 // against them internally, so every role must carry the actions it needs
-// there for viewer/manager as well, not only admin.
+// there for auditor/volunteer as well, not only admin.
+// Role ladder mirrors the brief: Auditor < Volunteer < Charity Admin.
+// - auditor: read-only across dashboards, ledger, reconciliation and audit.
+// - volunteer: everything an auditor can, plus taking donations at the
+//   terminal (donation.record gates the console's terminal launcher) and
+//   ledger exports.
+// - admin (Charity Admin): full access — campaign CRUD, reconciliation
+//   actions, user/role management.
 const statement = {
   ...defaultStatements,
   campaign: ["read", "create", "update", "delete"],
-  donation: ["read", "export"],
-  reconciliation: ["read", "run"],
+  donation: ["read", "record", "export"],
+  reconciliation: ["read", "run", "match"],
   audit: ["read"],
 } as const;
 
 export const ac = createAccessControl(statement);
 
-export const viewer = ac.newRole({ campaign: ["read"], donation: ["read"], reconciliation: ["read"], audit: ["read"] });
+export const auditor = ac.newRole({ campaign: ["read"], donation: ["read"], reconciliation: ["read"], audit: ["read"] });
 
-export const manager = ac.newRole({ campaign: ["read", "create", "update"], donation: ["read", "export"], reconciliation: ["read", "run"], audit: ["read"] });
+export const volunteer = ac.newRole({ campaign: ["read"], donation: ["read", "record", "export"], reconciliation: ["read"], audit: ["read"] });
 
 export const admin_ = ac.newRole({
   campaign: ["read", "create", "update", "delete"],
-  donation: ["read", "export"],
-  reconciliation: ["read", "run"],
+  donation: ["read", "record", "export"],
+  reconciliation: ["read", "run", "match"],
   audit: ["read"],
   user: [...defaultStatements.user],
   session: [...defaultStatements.session],
@@ -46,12 +53,7 @@ export const auth = betterAuth({
   trustedOrigins: env.FRONTEND_ORIGINS,
   database: drizzleAdapter(db, { provider: "sqlite" }),
   emailAndPassword: { enabled: true },
-  user: {
-    additionalFields: {
-      firstName: { type: "string", required: false },
-      lastName: { type: "string", required: false },
-    },
-  },
+  user: { additionalFields: { firstName: { type: "string", required: false }, lastName: { type: "string", required: false } } },
   plugins: [
     username({
       minUsernameLength: 3,
@@ -59,7 +61,7 @@ export const auth = betterAuth({
       usernameNormalization: (value) => value.toLowerCase(),
       usernameValidator: (value) => /^[a-zA-Z0-9_]+$/.test(value),
     }),
-    admin({ ac, roles: { viewer, manager, admin: admin_ }, defaultRole: "viewer", adminRoles: ["admin"] }),
+    admin({ ac, roles: { auditor, volunteer, admin: admin_ }, defaultRole: "auditor", adminRoles: ["admin"] }),
   ],
   // Cross-site prod (Cloudflare Workers ↔ VPS) needs SameSite=None; Secure cookies.
   // Dev stays on the defaults (same-site localhost works as-is, and Secure would break http).

@@ -9,11 +9,14 @@ export type AuditAction =
   | "campaign.delete"
   | "user.role_change"
   | "reconciliation.run"
+  | "reconciliation.match"
+  | "reconciliation.automatch"
+  | "donation.recorded"
   | "ledger.export.csv"
   | "ledger.export.pdf"
   | "auth.login";
 
-export type AuditTargetType = "campaign" | "user" | "ledger" | "reconciliation" | "auth";
+export type AuditTargetType = "campaign" | "user" | "ledger" | "reconciliation" | "donation" | "auth";
 
 export const auditLogs = sqliteTable(
   "audit_logs",

@@ -32,7 +32,9 @@ export const audit = new Elysia({ name: "audit" })
     },
     {
       auth: true,
-      permissions: { donation: ["read"] },
+      // Exporting is what's being audited — a role that can't export the
+      // ledger has no business self-reporting an export.
+      permissions: { donation: ["export"] },
       body: ClientEventBody,
       response: { 200: data(t.Object({ recorded: t.Boolean() })) },
       detail: { summary: "Record a restricted client-side audit event (e.g. ledger.export.pdf)", tags: ["Admin", "Audit"] },

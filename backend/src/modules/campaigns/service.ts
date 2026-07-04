@@ -26,7 +26,27 @@ const toPublic = (row: Campaign) => ({
   presetsMinor: row.presetsMinor,
   allowCustom: row.allowCustom,
   frequencies: row.frequencies,
+  startsAt: row.startsAt?.toISOString() ?? null,
+  endsAt: row.endsAt?.toISOString() ?? null,
 });
+
+// startsAt/endsAt arrive as ISO strings (or null); the schedule window must be
+// coherent before it becomes Date columns.
+const scheduleFrom = (input: { startsAt?: string | null; endsAt?: string | null }) => {
+  const parse = (value: string | null | undefined, field: string) => {
+    if (value === undefined) return undefined; // field untouched (partial update)
+    if (value === null) return null;
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) throw BadRequest(`Invalid ${field} date`, { field });
+    return date;
+  };
+
+  const startsAt = parse(input.startsAt, "startsAt");
+  const endsAt = parse(input.endsAt, "endsAt");
+  if (startsAt && endsAt && startsAt > endsAt) throw BadRequest("Start date must be before end date", { field: "endsAt" });
+
+  return { startsAt, endsAt };
+};
 
 const toAdmin = (row: Campaign) => ({
   ...toPublic(row),
@@ -118,7 +138,7 @@ export abstract class CampaignService {
     const [existing] = await db.select({ id: campaigns.id }).from(campaigns).where(eq(campaigns.slug, input.slug)).limit(1);
     if (existing) throw BadRequest("Slug already in use", { field: "slug" });
 
-    const insert: NewCampaign = { ...input, createdBy: actor.id };
+    const insert: NewCampaign = { ...input, ...scheduleFrom(input), createdBy: actor.id };
     const [row] = await db.insert(campaigns).values(insert).returning();
     if (!row) throw BadRequest("Failed to create campaign");
 
@@ -141,7 +161,17 @@ export abstract class CampaignService {
       if (existing && existing.id !== id) throw BadRequest("Slug already in use", { field: "slug" });
     }
 
-    const [row] = await db.update(campaigns).set(input).where(eq(campaigns.id, id)).returning();
+    // Validate the resulting window against the stored side when only one bound changes.
+    const schedule = scheduleFrom({
+      startsAt: input.startsAt !== undefined ? input.startsAt : (before.startsAt?.toISOString() ?? null),
+      endsAt: input.endsAt !== undefined ? input.endsAt : (before.endsAt?.toISOString() ?? null),
+    });
+
+    const [row] = await db
+      .update(campaigns)
+      .set({ ...input, startsAt: schedule.startsAt, endsAt: schedule.endsAt })
+      .where(eq(campaigns.id, id))
+      .returning();
     if (!row) throw NotFound("Campaign not found");
 
     // Per-field diff so the audit log can answer "updated what, exactly?" — only fields

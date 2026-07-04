@@ -10,12 +10,12 @@ import { env } from "~/shared/config/env";
 import { can, useAuth } from "~/shared/auth";
 import { parsePages } from "~/shared/lib/pages";
 import { formatMoney } from "~/shared/lib/money";
-import { formatDateTime } from "~/shared/lib/datetime";
 import type { DonationLedgerRow } from "~/shared/api";
+import { formatDateTime } from "~/shared/lib/datetime";
 import { adminListCampaigns, adminListDonations, ledgerExportUrl, recordClientEvent } from "~/shared/api";
 import { Badge, Button, Card, EmptyState, ErrorState, Field, Input, Modal, Select, Skeleton, showToast } from "~/shared/ui";
 
-const statusVariant = { completed: "positive", pending: "warning", failed: "danger" } as const;
+const statusVariant = { completed: "positive", declined: "danger", refunded: "neutral", offline: "warning" } as const;
 const columnHelper = createColumnHelper<DonationLedgerRow>();
 
 const PAGE_SIZE = 20;
@@ -36,6 +36,8 @@ const LedgerPage: Component = () => {
   const [source, setSource] = createSignal("");
   const [dateFrom, setDateFrom] = createSignal("");
   const [dateTo, setDateTo] = createSignal("");
+  const [minEUR, setMinEUR] = createSignal("");
+  const [maxEUR, setMaxEUR] = createSignal("");
   const [q, setQ] = createSignal("");
   const [page, setPage] = createSignal(1);
   const [sortField, setSortField] = createSignal("createdAt");
@@ -48,6 +50,9 @@ const LedgerPage: Component = () => {
     source: source() || undefined,
     dateFrom: dateFrom() || undefined,
     dateTo: dateTo() || undefined,
+    // Major-unit € inputs → minor units for the API's EUR-normalised bounds.
+    minEURMinor: minEUR() ? Math.round(Number.parseFloat(minEUR()) * 100) : undefined,
+    maxEURMinor: maxEUR() ? Math.round(Number.parseFloat(maxEUR()) * 100) : undefined,
     q: q() || undefined,
     sort: sortField(),
     dir: sortDir(),
@@ -66,7 +71,22 @@ const LedgerPage: Component = () => {
       cell: (info) => <span class="font-mono tabular-nums">{formatMoney(info.getValue(), info.row.original.currency)}</span>,
     }),
     columnHelper.accessor("status", { header: t("admin.status"), cell: (info) => <Badge variant={statusVariant[info.getValue()]}>{info.getValue()}</Badge> }),
-    columnHelper.accessor("source", { header: t("admin.source") }),
+    columnHelper.accessor("method", { header: t("admin.method"), cell: (info) => (info.getValue() === "tap" ? t("donor.methodTap") : t("donor.methodCard")) }),
+    // Donor options at a glance: round-up and Gift Aid flags.
+    columnHelper.display({
+      id: "flags",
+      header: t("admin.details"),
+      cell: (info) => (
+        <span class="flex gap-1">
+          <Show when={info.row.original.roundedUp}>
+            <Badge variant="neutral">{t("admin.roundedUpFlag")}</Badge>
+          </Show>
+          <Show when={info.row.original.giftAid}>
+            <Badge variant="neutral">{t("admin.giftAidFlag")}</Badge>
+          </Show>
+        </span>
+      ),
+    }),
     columnHelper.accessor("createdAt", { header: t("admin.createdAtCol"), cell: (info) => formatDateTime(info.getValue()) }),
   ];
 
@@ -143,13 +163,25 @@ const LedgerPage: Component = () => {
 
     autoTable(doc, {
       startY: 32,
-      head: [[t("admin.reference"), t("admin.donor"), t("admin.campaign"), t("admin.amount"), t("admin.status"), t("admin.source"), t("admin.createdAtCol")]],
+      head: [
+        [
+          t("admin.reference"),
+          t("admin.donor"),
+          t("admin.campaign"),
+          t("admin.amount"),
+          t("admin.status"),
+          t("admin.method"),
+          t("admin.source"),
+          t("admin.createdAtCol"),
+        ],
+      ],
       body: rows.map((r) => [
         r.reference,
         r.donorName ?? "-",
         r.campaignName,
         formatMoney(r.amountMinor, r.currency),
         r.status,
+        r.method,
         r.source,
         formatDateTime(r.createdAt),
       ]),
@@ -215,7 +247,7 @@ const LedgerPage: Component = () => {
       </div>
 
       <div class="flex flex-wrap gap-2">
-        <Input placeholder={t("admin.search")} value={q()} onInput={(e) => setQ(e.currentTarget.value)} class="max-w-50" />
+        <Input placeholder={t("admin.searchRefOrTxn")} value={q()} onInput={(e) => setQ(e.currentTarget.value)} class="max-w-56" />
         <Select
           class="max-w-45"
           value={campaignId()}
@@ -239,9 +271,10 @@ const LedgerPage: Component = () => {
           onChange={(e) => setStatus(e.currentTarget.value)}
           options={[
             { value: "", label: t("admin.allStatuses") },
-            { value: "completed", label: "completed" },
-            { value: "pending", label: "pending" },
-            { value: "failed", label: "failed" },
+            { value: "completed", label: t("admin.statusCompleted") },
+            { value: "declined", label: t("admin.statusDeclined") },
+            { value: "refunded", label: t("admin.statusRefunded") },
+            { value: "offline", label: t("admin.statusOffline") },
           ]}
         />
         <Select
@@ -256,6 +289,26 @@ const LedgerPage: Component = () => {
         />
         <Input type="date" value={dateFrom()} onInput={(e) => setDateFrom(e.currentTarget.value)} class="max-w-40" />
         <Input type="date" value={dateTo()} onInput={(e) => setDateTo(e.currentTarget.value)} class="max-w-40" />
+        <Input
+          type="number"
+          min="0"
+          step="0.01"
+          inputmode="decimal"
+          placeholder={t("admin.minAmountEUR")}
+          value={minEUR()}
+          onInput={(e) => setMinEUR(e.currentTarget.value)}
+          class="max-w-28"
+        />
+        <Input
+          type="number"
+          min="0"
+          step="0.01"
+          inputmode="decimal"
+          placeholder={t("admin.maxAmountEUR")}
+          value={maxEUR()}
+          onInput={(e) => setMaxEUR(e.currentTarget.value)}
+          class="max-w-28"
+        />
       </div>
 
       <Show when={!ledger.loading} fallback={<Skeleton variant="block" class="h-64" />}>

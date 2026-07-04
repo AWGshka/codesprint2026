@@ -1,13 +1,24 @@
 import { DonationService } from "./service";
-import { CreateDonationBody, CreateDonationResponse, DonationExportQuery, DonationListQuery, DonationListResponse, DonationReceiptSchema, ReferenceParams } from "./model";
+import {
+  CreateDonationBody,
+  CreateDonationResponse,
+  DonationExportQuery,
+  DonationListQuery,
+  DonationListResponse,
+  DonationReceiptSchema,
+  ReferenceParams,
+  SendReceiptBody,
+  SendReceiptResponse,
+  SupporterSchema,
+} from "./model";
 
 import { Elysia, t } from "elysia";
 
 import { toCsv } from "~/lib/csv";
-import { paginate } from "~/lib/pagination";
+import { AppError } from "~/lib/errors";
 import { parsePages } from "~/lib/pages";
 import { data, ok } from "~/lib/response";
-import { AppError } from "~/lib/errors";
+import { paginate } from "~/lib/pagination";
 import { authPlugin } from "~/plugins/auth";
 import { SlugParams } from "~/modules/campaigns/model";
 
@@ -21,14 +32,19 @@ const EXPORT_HEADERS = [
   "frequency",
   "status",
   "source",
+  "method",
+  "roundedUp",
+  "giftAid",
   "paymentRef",
   "createdAt",
 ];
 
 export const donations = new Elysia({ name: "donations" })
   .use(authPlugin)
-  // Public — simulated payment + receipt
-  .post("/campaigns/:slug/donations", async ({ params, body }) => ok(await DonationService.create(params.slug, body)), {
+  // Public — simulated payment + receipt. `optionalAuth` so a signed-in
+  // volunteer taking donations at the terminal lands in the audit trail.
+  .post("/campaigns/:slug/donations", async ({ params, body, actor }) => ok(await DonationService.create(params.slug, body, actor)), {
+    optionalAuth: true,
     params: SlugParams,
     body: CreateDonationBody,
     response: { 200: data(CreateDonationResponse) },
@@ -38,6 +54,21 @@ export const donations = new Elysia({ name: "donations" })
     params: ReferenceParams,
     response: { 200: data(DonationReceiptSchema) },
     detail: { summary: "Donation receipt by reference", tags: ["Donations"] },
+  })
+  .post(
+    "/campaigns/:slug/donations/:reference/receipt",
+    async ({ params, body }) => ok(await DonationService.sendReceipt(params.slug, params.reference, body.channel, body.to)),
+    {
+      params: ReferenceParams,
+      body: SendReceiptBody,
+      response: { 200: data(SendReceiptResponse) },
+      detail: { summary: "Send the receipt by email or SMS (simulated delivery)", tags: ["Donations"] },
+    },
+  )
+  .get("/campaigns/:slug/supporters", async ({ params }) => ok(await DonationService.supporters(params.slug)), {
+    params: SlugParams,
+    response: { 200: data(t.Array(SupporterSchema)) },
+    detail: { summary: "Public supporters wall — recent opted-in named donors", tags: ["Donations"] },
   })
   // Admin — ledger
   .get("/admin/donations", async ({ query }) => ok(await DonationService.listAdmin(query)), {
@@ -80,6 +111,9 @@ export const donations = new Elysia({ name: "donations" })
           r.frequency,
           r.status,
           r.source,
+          r.method,
+          r.roundedUp,
+          r.giftAid,
           r.paymentRef,
           r.createdAt,
         ]),

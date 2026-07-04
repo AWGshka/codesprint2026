@@ -1,18 +1,24 @@
 import { useNavigate } from "@solidjs/router";
 
-import { Show, createSignal, onCleanup } from "solid-js";
 import type { Component } from "solid-js";
+import { Show, createSignal, onCleanup } from "solid-js";
 
 import { t } from "~/shared/i18n";
 import { cn } from "~/shared/lib/cn";
-import { fullName } from "~/shared/lib/user";
 import { useAuth } from "~/shared/auth";
-import { PrefsPanelContent } from "~/shared/prefs";
 import { Avatar, Badge } from "~/shared/ui";
 import { SignOutIcon } from "~/shared/icons";
+import { fullName } from "~/shared/lib/user";
 import type { UserRole } from "~/shared/api/types";
+import { PrefsPanelContent } from "~/shared/prefs";
 
-const roleVariant: Record<UserRole, "neutral" | "warning" | "positive"> = { viewer: "neutral", manager: "warning", admin: "positive" };
+const roleVariant: Record<UserRole, "neutral" | "warning" | "positive"> = { auditor: "neutral", volunteer: "warning", admin: "positive" };
+
+const roleLabelKey: Record<UserRole, "admin.roleAuditor" | "admin.roleVolunteer" | "admin.roleAdmin"> = {
+  auditor: "admin.roleAuditor",
+  volunteer: "admin.roleVolunteer",
+  admin: "admin.roleAdmin",
+};
 
 /**
  * Bottom-of-sidebar profile card — avatar/name/role trigger that opens a popover combining the
@@ -59,16 +65,13 @@ export const AdminProfileMenu: Component<{ class?: string; direction?: "up" | "d
           setAnchor(trigger?.getBoundingClientRect());
           setOpen((v) => !v);
         }}
-        class={cn(
-          "flex w-full items-center gap-2.5 rounded-md p-2 text-left transition-colors hover:bg-surface-sunken",
-          props.compact && "justify-center",
-        )}>
+        class={cn("flex w-full items-center gap-2.5 rounded-md p-2 text-left transition-colors hover:bg-surface-sunken", props.compact && "justify-center")}>
         <Avatar firstName={auth.firstName()} lastName={auth.lastName()} username={username()} size="sm" />
         <Show when={!props.compact}>
           <div class="min-w-0 flex-1">
             <p class="truncate font-sans text-fs-sm font-semibold text-fg">{fullName(auth.firstName(), auth.lastName(), username())}</p>
             <Show when={role()}>
-              <Badge variant={roleVariant[role() as UserRole]}>{role()}</Badge>
+              <Badge variant={roleVariant[role() as UserRole]}>{t(roleLabelKey[role() as UserRole])}</Badge>
             </Show>
           </div>
         </Show>

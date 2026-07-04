@@ -1,7 +1,5 @@
 declare module "mastercard-oauth1-signer" {
-  const oauth: {
-    getAuthorizationHeader(uri: string, method: string, payload: string | undefined, consumerKey: string, signingKey: string): string;
-  };
+  const oauth: { getAuthorizationHeader(uri: string, method: string, payload: string | undefined, consumerKey: string, signingKey: string): string };
   export default oauth;
 }
 

@@ -41,7 +41,8 @@ const signingKey = async (): Promise<string> => {
   const p12 = forge.pkcs12.pkcs12FromAsn1(forge.asn1.fromDer(der), false, config.keystorePassword);
   const bag = p12.getBags({ friendlyName: config.keystoreAlias, bagType: forge.pki.oids.pkcs8ShroudedKeyBag }).friendlyName?.[0];
   if (!bag?.key) throw new Error(`Alias "${config.keystoreAlias}" not found in Mastercard keystore`);
-  return (cachedSigningKey = forge.pki.privateKeyToPem(bag.key));
+  cachedSigningKey = forge.pki.privateKeyToPem(bag.key);
+  return cachedSigningKey;
 };
 
 let cachedFle: InstanceType<typeof encryption.FieldLevelEncryption> | undefined;

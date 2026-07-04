@@ -4,7 +4,7 @@ import { CurrencySchema } from "~/lib/currency";
 
 export const CampaignStatusSchema = t.Union([t.Literal("draft"), t.Literal("active"), t.Literal("paused"), t.Literal("ended")]);
 
-export const FrequencySchema = t.Union([t.Literal("one_time"), t.Literal("monthly"), t.Literal("roundup")]);
+export const FrequencySchema = t.Union([t.Literal("one_time"), t.Literal("monthly")]);
 
 export const CampaignPublicSchema = t.Object({
   id: t.String(),
@@ -22,6 +22,8 @@ export const CampaignPublicSchema = t.Object({
   presetsMinor: t.Array(t.Integer()),
   allowCustom: t.Boolean(),
   frequencies: t.Array(FrequencySchema),
+  startsAt: t.Nullable(t.String()),
+  endsAt: t.Nullable(t.String()),
 });
 
 export const CampaignProgressSchema = t.Object({ raisedMinor: t.Integer(), targetMinor: t.Integer(), donorCount: t.Integer() });
@@ -45,6 +47,9 @@ export const CreateCampaignBody = t.Object({
   presetsMinor: t.Array(t.Integer({ minimum: 1 }), { minItems: 1 }),
   allowCustom: t.Optional(t.Boolean()),
   frequencies: t.Array(FrequencySchema, { minItems: 1 }),
+  // ISO date strings; service layer validates startsAt <= endsAt.
+  startsAt: t.Optional(t.Nullable(t.String({ format: "date-time" }))),
+  endsAt: t.Optional(t.Nullable(t.String({ format: "date-time" }))),
 });
 
 export const UpdateCampaignBody = t.Partial(CreateCampaignBody);

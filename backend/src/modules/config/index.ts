@@ -3,9 +3,9 @@ import { BinDetailsSchema, BinLookupQuery, CurrencyConfigSchema } from "./model"
 import { Elysia } from "elysia";
 
 import { data, ok } from "~/lib/response";
+import type { Currency } from "~/lib/currency";
 import { BASE_CURRENCY, RATES, SUPPORTED_CURRENCIES } from "~/lib/currency";
 import { MastercardServices, isMastercardConfigured } from "~/lib/mastercard";
-import type { Currency } from "~/lib/currency";
 
 const RATES_TTL_MS = 3_600_000;
 
@@ -20,12 +20,16 @@ const currentRates = async (): Promise<RatesCache> => {
   if (isMastercardConfigured()) {
     try {
       const [usd, gbp] = await Promise.all([MastercardServices.conversionRate("EUR", "USD"), MastercardServices.conversionRate("EUR", "GBP")]);
-      if (usd && gbp) return (ratesCache = { rates: { EUR: 1, USD: usd, GBP: gbp }, rateSource: "live", fetchedAt: Date.now() });
+      if (usd && gbp) {
+        ratesCache = { rates: { EUR: 1, USD: usd, GBP: gbp }, rateSource: "live", fetchedAt: Date.now() };
+        return ratesCache;
+      }
     } catch (error) {
       console.warn("[mastercard] live FX unavailable, using static rates:", String(error).slice(0, 200));
     }
   }
-  return (ratesCache = { rates: RATES, rateSource: "static", fetchedAt: Date.now() });
+  ratesCache = { rates: RATES, rateSource: "static", fetchedAt: Date.now() };
+  return ratesCache;
 };
 
 export const config = new Elysia({ name: "config" })

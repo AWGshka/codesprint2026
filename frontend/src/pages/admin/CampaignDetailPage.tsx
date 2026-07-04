@@ -60,6 +60,14 @@ const CampaignDetailPage: Component = () => {
                 <span class="text-fg">{c().frequencies.join(", ")}</span>
               </div>
               <div class="flex justify-between font-sans text-fs-sm">
+                <span class="text-fg-muted">{t("admin.schedule")}</span>
+                <span class="text-fg">
+                  {c().startsAt || c().endsAt
+                    ? `${c().startsAt ? formatDate(c().startsAt as string) : "…"} → ${c().endsAt ? formatDate(c().endsAt as string) : "…"}`
+                    : t("admin.noSchedule")}
+                </span>
+              </div>
+              <div class="flex justify-between font-sans text-fs-sm">
                 <span class="text-fg-muted">{t("admin.createdAt")}</span>
                 <span class="text-fg">{formatDate(c().createdAt)}</span>
               </div>

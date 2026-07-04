@@ -23,7 +23,11 @@ const emptyForm: CreateCampaignBody = {
   frequencies: ["one_time"],
 };
 
-const FREQUENCIES: DonationFrequency[] = ["one_time", "monthly", "roundup"];
+const FREQUENCIES: DonationFrequency[] = ["one_time", "monthly"];
+const frequencyLabelKey: Record<DonationFrequency, "donor.oneTime" | "donor.monthly"> = { one_time: "donor.oneTime", monthly: "donor.monthly" };
+
+/** ISO timestamp → the `yyyy-mm-dd` a date input needs (empty when unset). */
+const toDateInput = (iso?: string | null): string => (iso ? iso.slice(0, 10) : "");
 const CURRENCIES: CurrencyCode[] = ["EUR", "USD", "GBP"];
 const STATUSES: CampaignStatus[] = ["draft", "active", "paused", "ended"];
 
@@ -39,6 +43,8 @@ const CampaignFormPage: Component = () => {
 
   const [form, setForm] = createSignal<CreateCampaignBody>(emptyForm);
   const [presetsText, setPresetsText] = createSignal("10, 25, 50");
+  const [startsAt, setStartsAt] = createSignal("");
+  const [endsAt, setEndsAt] = createSignal("");
   const [saving, setSaving] = createSignal(false);
   const [error, setError] = createSignal<string>();
   let hydrated = false;
@@ -49,6 +55,8 @@ const CampaignFormPage: Component = () => {
       hydrated = true;
       setForm({ ...c, story: c.story ?? "", logoUrl: c.logoUrl ?? undefined, heroImageUrl: c.heroImageUrl ?? undefined });
       setPresetsText(c.presetsMinor.map((m) => (m / 100).toString()).join(", "));
+      setStartsAt(toDateInput(c.startsAt));
+      setEndsAt(toDateInput(c.endsAt));
     }
   });
 
@@ -65,7 +73,13 @@ const CampaignFormPage: Component = () => {
         .split(",")
         .map((s) => Math.round(Number.parseFloat(s.trim()) * 100))
         .filter((n) => Number.isFinite(n) && n > 0);
-      const body: CreateCampaignBody = { ...form(), presetsMinor };
+      const body: CreateCampaignBody = {
+        ...form(),
+        presetsMinor,
+        // Date inputs → ISO timestamps; empty means an open-ended campaign.
+        startsAt: startsAt() ? new Date(startsAt()).toISOString() : null,
+        endsAt: endsAt() ? new Date(endsAt()).toISOString() : null,
+      };
       if (isEdit() && params.id) await adminUpdateCampaign(params.id, body);
       else await adminCreateCampaign(body);
       showToast(t("admin.save"), "success");
@@ -152,6 +166,15 @@ const CampaignFormPage: Component = () => {
                 </div>
               </Field>
 
+              <div class="grid grid-cols-2 gap-3">
+                <Field label={t("admin.startDate")}>
+                  <Input type="date" value={startsAt()} onInput={(e) => setStartsAt(e.currentTarget.value)} />
+                </Field>
+                <Field label={t("admin.endDate")}>
+                  <Input type="date" value={endsAt()} onInput={(e) => setEndsAt(e.currentTarget.value)} />
+                </Field>
+              </div>
+
               <Field label={t("admin.presets")} hint={t("admin.presetsHint")}>
                 <Input value={presetsText()} onInput={(e) => setPresetsText(e.currentTarget.value)} />
               </Field>
@@ -161,7 +184,9 @@ const CampaignFormPage: Component = () => {
               <Field label={t("admin.frequencies")}>
                 <div class="flex gap-4">
                   <For each={FREQUENCIES}>
-                    {(freq) => <Checkbox label={freq} checked={form().frequencies.includes(freq)} onChange={() => toggleFrequency(freq)} />}
+                    {(freq) => (
+                      <Checkbox label={t(frequencyLabelKey[freq])} checked={form().frequencies.includes(freq)} onChange={() => toggleFrequency(freq)} />
+                    )}
                   </For>
                 </div>
               </Field>

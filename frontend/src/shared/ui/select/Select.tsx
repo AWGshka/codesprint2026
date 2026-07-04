@@ -36,11 +36,7 @@ export const Select: Component<SelectProps> = (props) => {
         </For>
       </select>
       {/* Custom chevron — native one hugs the edge; this sits at the same inset as the text (0.75rem). */}
-      <svg
-        class="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-fg-muted"
-        viewBox="0 0 16 16"
-        fill="none"
-        aria-hidden="true">
+      <svg class="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-fg-muted" viewBox="0 0 16 16" fill="none" aria-hidden="true">
         <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
       </svg>
     </span>

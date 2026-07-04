@@ -1,10 +1,12 @@
 # GiveTap
 
-Contactless charitable giving prototype — a public **donor app** (branded
-per-campaign donation flow), a role-based **admin console** (campaigns,
-live dashboard, ledger, exports, reconciliation, audit), and a native
-**kiosk shell** (Capacitor + Tap to Pay), built for the GiveTap practice
-task (see `.task/CodeSprintMT-2026-Practice-Task-GiveTap.md`).
+Contactless charitable giving prototype — a public **donor app / donation
+terminal** (branded per-campaign flow with simulated tap-to-pay, Gift Aid,
+round-up and a live supporters wall), a role-based **admin console**
+(campaigns, live dashboard, ledger, exports, reconciliation, audit), and a
+native **kiosk shell** (Capacitor + Tap to Pay), built for the CodeSprintMT
+2026 Open Category task (see
+`.task/CodeSprintMT-2026-Open-Category-Challenge.md`).
 
 ## Architecture
 
@@ -24,14 +26,29 @@ kiosk/      Capacitor (Android/iOS) shell that wraps the web kiosk route and
   read/write goes through the backend's `/api/*` REST surface, wrapped in a
   single response envelope (`{ data }` on success, `{ error: { code,
   message, details? } }` on failure).
-- **Auth/RBAC**: Better Auth `username` + `admin` plugins. Three roles —
-  `viewer` (read-only), `manager` (campaigns + exports + reconciliation),
-  `admin` (everything + user/role management). Enforced both in the UI
+- **Auth/RBAC**: Better Auth `username` + `admin` plugins. Role ladder per
+  the brief — `auditor` (read-only: dashboards, ledger, reconciliation,
+  audit), `volunteer` (auditor + take donations at the terminal + ledger
+  exports), `admin` / Charity Admin (everything: campaign CRUD,
+  reconciliation actions, user/role management). Enforced both in the UI
   (buttons/routes hidden) and on the server (a `permissions` macro checks
-  every mutating route — the UI hiding is cosmetic only).
-- **Real-time**: an in-memory pub/sub + Server-Sent-Events endpoint
-  (`GET /api/admin/events`) pushes `donation.created` to the admin dashboard,
-  which merges live events into its charts/feed without a manual refresh.
+  every mutating route — the UI hiding is cosmetic only). Donations recorded
+  while a volunteer/admin is signed in land in the audit trail
+  (`donation.recorded`).
+- **Real-time**: an in-memory pub/sub + Server-Sent-Events endpoints —
+  `GET /api/admin/events` (auth) pushes `donation.created` to the admin
+  dashboard, and the public `GET /api/campaigns/:slug/events` streams
+  wall-safe completed donations to the supporters wall on the campaign page
+  and the terminal's bottom strip.
+- **Donor options**: One-time/Monthly cadence, "round up to the nearest €10"
+  (bumps the charged amount; flagged on the ledger/receipt), a Gift Aid-style
+  declaration (+25% demo, no charge change), and a supporters-wall opt-in —
+  opted-in names actually appear (live) on the campaign page and terminal.
+- **Outcomes (M1.6)**: the terminal simulates Approved / Declined / Cancelled
+  / Offline taps. Declined and offline attempts persist as ledger rows
+  (`declined` / `offline` statuses, alongside `completed` and `refunded`);
+  cancelled never reaches the server. Receipts can be sent by email or SMS
+  (simulated delivery, validated + recorded) as well as downloaded as PDF.
 - **Money**: always integer minor units + ISO-4217 currency codes end to
   end; static conversion rates (`EUR:1, USD:1.08, GBP:0.85`) bridge
   everything through EUR for aggregation. Formatting is `Intl.NumberFormat`,
@@ -40,6 +57,9 @@ kiosk/      Capacitor (Android/iOS) shell that wraps the web kiosk route and
   key material (`backend/mastercard/`, gitignored) are present; otherwise a
   deterministic mock processor (card last-4 `0002` declines, anything else
   succeeds).
+- **i18n & accessibility**: six locales with flag picker — EN / MT / FR / NL
+  (the brief's set) plus IT / ES — with English fallback per key; text-size
+  control, light/dark theme, and a high-contrast toggle.
 
 ## Deployment
 
@@ -95,21 +115,24 @@ To start over from a clean database: stop the backend, delete
 ## Demo credentials
 
 Username + password login (email is only an account key, not used to log in).
+The login page also has one-click buttons for each profile.
 
-| Username  | Password   | Role    | Can do                                                     |
-| --------- | ---------- | ------- | ---------------------------------------------------------- |
-| `viewer`  | `demo1234` | viewer  | Read-only: dashboard, ledger, reconciliation, audit log    |
-| `manager` | `demo1234` | manager | + create/edit campaigns, export ledger, run reconciliation |
-| `admin`   | `demo1234` | admin   | + delete campaigns, manage users/roles                     |
+| Username    | Password   | Role      | Can do                                                          |
+| ----------- | ---------- | --------- | --------------------------------------------------------------- |
+| `auditor`   | `demo1234` | auditor   | Read-only: dashboard, ledger, reconciliation, audit log          |
+| `volunteer` | `demo1234` | volunteer | + take donations at the terminal, export ledger (CSV/PDF)        |
+| `admin`     | `demo1234` | admin     | + campaign CRUD, reconciliation actions, manage users/roles      |
 
 **Simulated payment decline**: on the donor "pay" step, enter card last-4
 digit `0002` to trigger a deterministic `402 PAYMENT_DECLINED` (any other
-last-4 succeeds when the mock processor is active).
+last-4 succeeds when the mock processor is active). On the terminal's tap
+screen, use the **Approved / Declined / Cancelled / Offline** simulation
+buttons instead.
 
 ## Tests / checks
 
 ```bash
-cd backend  && bun run format && bun run lint && bun run typecheck && bun test
+cd backend  && bun run format && bun run lint && bun run typecheck
 cd frontend && bun run format && bun run lint && bun run typecheck && bun run build
 ```
 

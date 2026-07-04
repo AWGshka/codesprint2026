@@ -211,6 +211,17 @@ body {
   }
 }
 
+@keyframes gt-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 @keyframes gt-shimmer {
   0% {
     background-position: -200px 0;
@@ -230,6 +241,15 @@ body {
   );
   background-size: 400px 100%;
   animation: gt-shimmer 1.3s linear infinite;
+}
+
+/* Hide scrollbar in auto-scrolling compact supporters wall (kiosk). */
+.gt-hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.gt-hide-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 @media (prefers-reduced-motion: reduce) {

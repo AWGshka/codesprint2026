@@ -1,7 +1,9 @@
 import { en } from "./dictionaries/en";
-import { mt } from "./dictionaries/mt";
-import { it } from "./dictionaries/it";
 import { es } from "./dictionaries/es";
+import { fr } from "./dictionaries/fr";
+import { it } from "./dictionaries/it";
+import { mt } from "./dictionaries/mt";
+import { nl } from "./dictionaries/nl";
 
 import type { Flatten } from "@solid-primitives/i18n";
 import { flatten, resolveTemplate, translator } from "@solid-primitives/i18n";
@@ -20,6 +22,8 @@ const withFallback = (dict: object) => ({ ...flatEn, ...flatten(dict as typeof e
 const dictionaries: Record<Locale, Flatten<typeof en>> = {
   en: flatEn,
   mt: withFallback(mt),
+  fr: withFallback(fr),
+  nl: withFallback(nl),
   it: withFallback(it),
   es: withFallback(es),
 };

@@ -1,4 +1,4 @@
-// Spanish — full dictionary mirroring `en`. Missing keys fall back to `en` (context.ts).
+// Spanish - full dictionary mirroring `en`. Missing keys fall back to `en` (context.ts).
 export const es = {
   nav: {
     home: "Inicio",
@@ -76,7 +76,8 @@ export const es = {
     kioskTapToStart: "Toca para empezar",
     kioskTapCard: "Acerca tu tarjeta",
     kioskTapHint: "Acerca tu tarjeta o teléfono al lector.",
-    kioskNfcHint: "NFC listo - acerca cualquier tarjeta a la parte trasera de este teléfono. Solo demo: no se lee ningún dato de la tarjeta y no se cobra nada.",
+    kioskNfcHint:
+      "NFC listo - acerca cualquier tarjeta a la parte trasera de este teléfono. Solo demo: no se lee ningún dato de la tarjeta y no se cobra nada.",
     kioskEmulate: "Simular un toque (demo)",
     kioskReading: "Leyendo tarjeta… pago en curso.",
     kioskThanks: "Gracias por donar",
@@ -88,6 +89,20 @@ export const es = {
     tagline: "Donaciones sin contacto para las causas que te rodean",
     intro:
       "GiveTap convierte cualquier campaña en una experiencia tap-to-give. Las organizaciones publican una página personalizada en minutos; los donantes donan en segundos desde su teléfono, un enlace compartido o el quiosco de un voluntario - sin cuenta, sin instalar apps, con recibo instantáneo.",
+    terminalCardTitle: "Terminal de donación",
+    terminalCardSubtitle: "Para donantes y voluntarios en el terreno",
+    terminalFeature1: "Páginas de campaña personalizadas con importes sugeridos y libres",
+    terminalFeature2: "Tap-to-pay simulado y pagos con tarjeta en el sandbox de Mastercard",
+    terminalFeature3: "Multidivisa (EUR principal) con recibos por email o SMS",
+    terminalFeature4: "Muro de donantes, declaración Gift Aid y redondeo a 10 €",
+    openTerminal: "Abrir el terminal de donación",
+    adminCardTitle: "Consola de administración",
+    adminCardSubtitle: "Para la oficina de la organización",
+    adminFeature1: "Acceso por roles: Auditor, Voluntario, Admin",
+    adminFeature2: "Panel en vivo - totales, donantes, donación media, progreso vs objetivo",
+    adminFeature3: "Libro mayor filtrable con exportación CSV y PDF",
+    adminFeature4: "Conciliación con el sandbox y registro de auditoría completo",
+    openAdmin: "Abrir la consola de administración",
     howItWorksTitle: "Cómo funciona",
     step1Title: "Elige una causa",
     step1Body: "Explora las campañas activas en Descubrir, o escanea el código QR de una campaña.",
@@ -137,7 +152,7 @@ export const es = {
     genericError: "Algo salió mal",
     adminLoginTitle: "Consola de administración",
     adminLoginSubtitle: "Inicia sesión con tu cuenta de personal de GiveTap.",
-    demoCredentials: "Demo: viewer / manager / admin, contraseña demo1234",
+    demoCredentials: "Contraseña demo para cada perfil: demo1234",
   },
   admin: {
     title: "Consola de administración",

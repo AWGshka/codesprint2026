@@ -22,6 +22,7 @@ export {
   ScrollText as AuditIcon,
   Sparkles as ImpactIcon,
   Users as UsersIcon,
+  Nfc as TerminalIcon,
   LogOut as SignOutIcon,
   PanelLeftClose as CollapseIcon,
   PanelLeftOpen as ExpandIcon,

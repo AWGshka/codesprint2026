@@ -1,8 +1,8 @@
 import type { Component } from "solid-js";
 
 import { cn } from "~/shared/lib/cn";
-import { avatarColor } from "~/shared/lib/color";
 import { initials } from "~/shared/lib/user";
+import { avatarColor } from "~/shared/lib/color";
 
 export interface AvatarProps {
   firstName?: string | null;

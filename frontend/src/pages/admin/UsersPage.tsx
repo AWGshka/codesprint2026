@@ -8,10 +8,16 @@ import type { AdminUser, UserRole } from "~/shared/api";
 import { adminListUsers, adminSetUserRole, apiErrorCode } from "~/shared/api";
 import { Avatar, Badge, Card, ErrorState, Select, Skeleton, showToast } from "~/shared/ui";
 
-const roleVariant: Record<UserRole, "neutral" | "warning" | "positive"> = { viewer: "neutral", manager: "warning", admin: "positive" };
-// Only viewer/manager are ever assignable via this UI — the server never allows promoting to
+const roleVariant: Record<UserRole, "neutral" | "warning" | "positive"> = { auditor: "neutral", volunteer: "warning", admin: "positive" };
+// Only auditor/volunteer are ever assignable via this UI — the server never allows promoting to
 // admin through PATCH /admin/users/:id/role (400 INVALID_ROLE), and admin rows are locked below.
-const ASSIGNABLE_ROLES: UserRole[] = ["viewer", "manager"];
+const ASSIGNABLE_ROLES: UserRole[] = ["auditor", "volunteer"];
+
+const roleLabelKey: Record<UserRole, "admin.roleAuditor" | "admin.roleVolunteer" | "admin.roleAdmin"> = {
+  auditor: "admin.roleAuditor",
+  volunteer: "admin.roleVolunteer",
+  admin: "admin.roleAdmin",
+};
 
 const errorToastMessage = (err: unknown): string => {
   switch (apiErrorCode(err)) {
@@ -52,8 +58,8 @@ const UsersPage: Component = () => {
     return undefined;
   };
 
-  // Locked rows (own row, admin rows) never render the select, so only viewer/manager appear.
-  const optionsFor = (_u: AdminUser) => ASSIGNABLE_ROLES.map((r) => ({ value: r, label: r }));
+  // Locked rows (own row, admin rows) never render the select, so only auditor/volunteer appear.
+  const optionsFor = (_u: AdminUser) => ASSIGNABLE_ROLES.map((r) => ({ value: r, label: t(roleLabelKey[r]) }));
 
   return (
     <div class="space-y-5">
@@ -88,7 +94,7 @@ const UsersPage: Component = () => {
                         </td>
                         <td class="px-4 py-2.5 text-fg-muted">{u.email}</td>
                         <td class="px-4 py-2.5">
-                          <Badge variant={roleVariant[u.role]}>{u.role}</Badge>
+                          <Badge variant={roleVariant[u.role]}>{t(roleLabelKey[u.role])}</Badge>
                         </td>
                         <td class="px-4 py-2.5">
                           {/* Rows the caller can't edit (own row, admin rows) get no control at

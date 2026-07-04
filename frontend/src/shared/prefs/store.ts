@@ -2,11 +2,10 @@ import { createEffect, createRoot, createSignal } from "solid-js";
 
 export type Theme = "light" | "dark";
 export type TextSize = "100" | "112" | "125";
-export type Locale = "en" | "mt" | "it" | "es";
+export type Locale = "en" | "mt" | "fr" | "nl" | "it" | "es";
 
-const THEMES = ["light", "dark"] as const;
 const TEXT_SIZES = ["100", "112", "125"] as const;
-const LOCALES = ["en", "mt", "it", "es"] as const;
+const LOCALES = ["en", "mt", "fr", "nl", "it", "es"] as const;
 
 const STORAGE_KEYS = { theme: "givetap:theme", contrast: "givetap:contrast", textSize: "givetap:textsize", locale: "givetap:locale" } as const;
 

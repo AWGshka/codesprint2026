@@ -1,13 +1,5 @@
 import { CampaignService } from "./service";
-import {
-  CampaignListQuery,
-  CampaignListResponse,
-  CampaignWithProgressSchema,
-  CreateCampaignBody,
-  IdParams,
-  SlugParams,
-  UpdateCampaignBody,
-} from "./model";
+import { CampaignListQuery, CampaignListResponse, CampaignWithProgressSchema, CreateCampaignBody, IdParams, SlugParams, UpdateCampaignBody } from "./model";
 
 import { Elysia, t } from "elysia";
 

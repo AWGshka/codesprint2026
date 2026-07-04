@@ -14,6 +14,8 @@ import type {
   DonationReceipt,
   Paged,
   ReconciliationResult,
+  SendReceiptBody,
+  Supporter,
   UserRole,
 } from "./types";
 
@@ -33,6 +35,9 @@ export const getCampaign = (slug: string) => api.get<CampaignWithProgress>(`/api
 // ---- Public donations ----
 export const createDonation = (slug: string, body: CreateDonationBody) => api.post<CreateDonationResponse>(`/api/campaigns/${slug}/donations`, body);
 export const getReceipt = (slug: string, reference: string) => api.get<DonationReceipt>(`/api/campaigns/${slug}/donations/${reference}`);
+export const sendReceipt = (slug: string, reference: string, body: SendReceiptBody) =>
+  api.post<{ sent: boolean; channel: string; to: string }>(`/api/campaigns/${slug}/donations/${reference}/receipt`, body);
+export const listSupporters = (slug: string) => api.get<Supporter[]>(`/api/campaigns/${slug}/supporters`);
 
 // ---- Config ----
 export const getCurrencyConfig = () => api.get<CurrencyConfig>("/api/config/currencies");
@@ -59,6 +64,9 @@ export interface LedgerQuery {
   source?: string;
   dateFrom?: string;
   dateTo?: string;
+  /** Amount bounds in EUR minor units (converted server-side per row). */
+  minEURMinor?: number;
+  maxEURMinor?: number;
   q?: string;
   sort?: string;
   dir?: string;
@@ -75,6 +83,9 @@ export const getDashboardStats = () => api.get<DashboardStats>("/api/admin/dashb
 
 // ---- Reconciliation ----
 export const getReconciliation = () => api.get<ReconciliationResult>("/api/admin/reconciliation");
+export const reconcileMatch = (paymentRef: string) =>
+  api.post<{ matched: boolean; alreadyMatched: boolean }>("/api/admin/reconciliation/match", { paymentRef });
+export const reconcileAutoMatch = () => api.post<{ matchedCount: number }>("/api/admin/reconciliation/automatch", {});
 
 // ---- Audit ----
 export interface AuditQuery {

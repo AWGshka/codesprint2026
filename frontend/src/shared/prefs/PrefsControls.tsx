@@ -1,8 +1,8 @@
 import { prefs, setPrefs } from "./store";
 import type { Locale, TextSize, Theme } from "./store";
 
-import { Show, createSignal, onCleanup } from "solid-js";
 import type { Component } from "solid-js";
+import { Show, createSignal, onCleanup } from "solid-js";
 
 import { t } from "~/shared/i18n";
 import { cn } from "~/shared/lib/cn";
@@ -23,11 +23,15 @@ const textSizeOptions: { value: TextSize; label: string }[] = [
   { value: "125", label: "125%" },
 ];
 
+// Flag + name per locale (C2.1) — the EN/MT/FR/NL set mirrors MeDirect's
+// geographies; IT/ES are bonus locales carried over from the practice build.
 const localeOptions: { value: Locale; label: string }[] = [
-  { value: "en", label: "EN" },
-  { value: "mt", label: "MT" },
-  { value: "it", label: "IT" },
-  { value: "es", label: "ES" },
+  { value: "en", label: "🇬🇧 English" },
+  { value: "mt", label: "🇲🇹 Malti" },
+  { value: "fr", label: "🇫🇷 Français" },
+  { value: "nl", label: "🇳🇱 Nederlands" },
+  { value: "it", label: "🇮🇹 Italiano" },
+  { value: "es", label: "🇪🇸 Español" },
 ];
 
 /**

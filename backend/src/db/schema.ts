@@ -5,5 +5,6 @@ export * from "./auth-schema";
 export * from "./campaigns";
 export * from "./donations";
 export * from "./processor-settlements";
+export * from "./reconciliation-matches";
 export * from "./audit-logs";
 export * from "./relations";

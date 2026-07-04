@@ -9,11 +9,11 @@ const usernameOf = (u: object): string | null => (u as { username?: string | nul
 const firstNameOf = (u: object): string | null => (u as { firstName?: string | null }).firstName ?? null;
 const lastNameOf = (u: object): string | null => (u as { lastName?: string | null }).lastName ?? null;
 
-export type Role = "viewer" | "manager" | "admin";
+export type Role = "auditor" | "volunteer" | "admin";
 
 // Roles assignable via PATCH :id/role — admin is deliberately excluded, an
 // admin can never be minted through this API.
-const ASSIGNABLE_ROLES: readonly Role[] = ["viewer", "manager"];
+const ASSIGNABLE_ROLES: readonly Role[] = ["auditor", "volunteer"];
 
 export abstract class UserService {
   static async list(headers: Headers) {
@@ -37,7 +37,7 @@ export abstract class UserService {
 
   static async setRole(headers: Headers, userId: string, role: Role, actor: { id: string; email: string }) {
     if (!ASSIGNABLE_ROLES.includes(role)) {
-      throw new AppError(400, "INVALID_ROLE", "Role must be one of: viewer, manager (admins cannot be granted via this API)");
+      throw new AppError(400, "INVALID_ROLE", "Role must be one of: auditor, volunteer (admins cannot be granted via this API)");
     }
 
     if (userId === actor.id) {

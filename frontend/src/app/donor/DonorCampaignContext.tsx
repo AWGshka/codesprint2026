@@ -4,6 +4,7 @@ import type { Accessor, ParentComponent } from "solid-js";
 import { createContext, createEffect, createResource, createSignal, useContext } from "solid-js";
 
 import { getCampaign } from "~/shared/api";
+import { createSupporterEvents } from "~/shared/lib/useSSE";
 import type { CampaignWithProgress, CurrencyCode } from "~/shared/api";
 
 interface DonorCampaignApi {
@@ -31,6 +32,11 @@ export const DonorCampaignProvider: ParentComponent = (props) => {
       initializedCurrency = true;
       setCurrency(loaded.currency);
     }
+  });
+
+  // Listen for new donations on this campaign's SSE stream and refetch progress data.
+  createSupporterEvents(params.slug, () => {
+    void refetch();
   });
 
   const api: DonorCampaignApi = {

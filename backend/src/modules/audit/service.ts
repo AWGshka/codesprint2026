@@ -52,13 +52,7 @@ export abstract class AuditService {
     const [rows, [totalRow]] = await Promise.all([
       // Join the actor so the UI can show "First Last" over the username instead of a raw email.
       db
-        .select({
-          log: auditLogs,
-          actorFirstName: user.firstName,
-          actorLastName: user.lastName,
-          actorFallbackName: user.name,
-          actorUsername: user.username,
-        })
+        .select({ log: auditLogs, actorFirstName: user.firstName, actorLastName: user.lastName, actorFallbackName: user.name, actorUsername: user.username })
         .from(auditLogs)
         .leftJoin(user, eq(auditLogs.actorId, user.id))
         .where(where)
