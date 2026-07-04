@@ -4,9 +4,7 @@ Contactless charitable giving prototype — a public **donor app / donation
 terminal** (branded per-campaign flow with simulated tap-to-pay, Gift Aid,
 round-up and a live supporters wall), a role-based **admin console**
 (campaigns, live dashboard, ledger, exports, reconciliation, audit), and a
-native **kiosk shell** (Capacitor + Tap to Pay), built for the CodeSprintMT
-2026 Open Category task (see
-`.task/CodeSprintMT-2026-Open-Category-Challenge.md`).
+native **kiosk shell** (Capacitor + Tap to Pay), built for the CodeSprintMT 2026.
 
 ## Architecture
 
@@ -25,7 +23,7 @@ kiosk/      Capacitor (Android/iOS) shell that wraps the web kiosk route and
 - **Separation of concerns**: the frontend never touches the database — every
   read/write goes through the backend's `/api/*` REST surface, wrapped in a
   single response envelope (`{ data }` on success, `{ error: { code,
-  message, details? } }` on failure).
+message, details? } }` on failure).
 - **Auth/RBAC**: Better Auth `username` + `admin` plugins. Role ladder per
   the brief — `auditor` (read-only: dashboards, ledger, reconciliation,
   audit), `volunteer` (auditor + take donations at the terminal + ledger
@@ -63,11 +61,11 @@ kiosk/      Capacitor (Android/iOS) shell that wraps the web kiosk route and
 
 ## Deployment
 
-| Piece    | Where                                              | How                                                                                                          |
-| -------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| Frontend | Cloudflare Workers (static assets), `frontend/wrangler.toml` | Auto-deploys on push (Cloudflare git integration). Manual: `cd frontend && bun run deploy`.                    |
+| Piece    | Where                                                        | How                                                                                                                                 |
+| -------- | ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Frontend | Cloudflare Workers (static assets), `frontend/wrangler.toml` | Auto-deploys on push (Cloudflare git integration). Manual: `cd frontend && bun run deploy`.                                         |
 | Backend  | Private VPS (`https://api.awgsh.ru`), systemd unit `backend` | `.github/workflows/deploy-backend.yml` — rsync to `/opt/backend`, prod-only `bun install`, restart (migrations run at app startup). |
-| Kiosk    | Side-loaded Android build                          | Manual: `cd kiosk && bun run sync && bun run android`.                                                         |
+| Kiosk    | Side-loaded Android build                                    | Manual: `cd kiosk && bun run sync && bun run android`.                                                                              |
 
 Production wiring:
 
@@ -117,11 +115,11 @@ To start over from a clean database: stop the backend, delete
 Username + password login (email is only an account key, not used to log in).
 The login page also has one-click buttons for each profile.
 
-| Username    | Password   | Role      | Can do                                                          |
-| ----------- | ---------- | --------- | --------------------------------------------------------------- |
-| `auditor`   | `demo1234` | auditor   | Read-only: dashboard, ledger, reconciliation, audit log          |
-| `volunteer` | `demo1234` | volunteer | + take donations at the terminal, export ledger (CSV/PDF)        |
-| `admin`     | `demo1234` | admin     | + campaign CRUD, reconciliation actions, manage users/roles      |
+| Username    | Password   | Role      | Can do                                                      |
+| ----------- | ---------- | --------- | ----------------------------------------------------------- |
+| `auditor`   | `demo1234` | auditor   | Read-only: dashboard, ledger, reconciliation, audit log     |
+| `volunteer` | `demo1234` | volunteer | + take donations at the terminal, export ledger (CSV/PDF)   |
+| `admin`     | `demo1234` | admin     | + campaign CRUD, reconciliation actions, manage users/roles |
 
 **Simulated payment decline**: on the donor "pay" step, enter card last-4
 digit `0002` to trigger a deterministic `402 PAYMENT_DECLINED` (any other

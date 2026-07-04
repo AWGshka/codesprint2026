@@ -39,3 +39,4 @@ data/*.db-*
 
 # Mastercard key material — never commit
 mastercard/
+data/uploads

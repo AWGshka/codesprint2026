@@ -75,8 +75,15 @@ export abstract class ReconciliationService {
     const rows = await ReconciliationService.collectRows();
     const candidates = rows.filter((r) => !r.reconciled && r.status === "matched");
 
-    if (candidates.length > 0) {
-      await db.insert(reconciliationMatches).values(candidates.map((r) => ({ paymentRef: r.paymentRef, method: "auto" as const, matchedBy: actor.email })));
+    // Insert one-by-one so a single conflict doesn't block the rest.
+    let matchedCount = 0;
+    for (const r of candidates) {
+      try {
+        await db.insert(reconciliationMatches).values({ paymentRef: r.paymentRef, method: "auto" as const, matchedBy: actor.email });
+        matchedCount++;
+      } catch {
+        // Already reconciled (unique constraint) — skip.
+      }
     }
 
     await AuditService.record({
@@ -84,11 +91,11 @@ export abstract class ReconciliationService {
       actorEmail: actor.email,
       action: "reconciliation.automatch",
       targetType: "reconciliation",
-      targetId: `${candidates.length} transactions`,
-      metadata: { matchedCount: candidates.length },
+      targetId: `${matchedCount} transactions`,
+      metadata: { matchedCount },
     });
 
-    return { matchedCount: candidates.length };
+    return { matchedCount };
   }
 
   // Operator marks a single awaiting pair as reconciled — including
@@ -99,7 +106,12 @@ export abstract class ReconciliationService {
     if (!row) throw NotFound("No transaction with that payment reference");
     if (row.reconciled) return { matched: true, alreadyMatched: true };
 
-    await db.insert(reconciliationMatches).values({ paymentRef, method: "manual", matchedBy: actor.email });
+    try {
+      await db.insert(reconciliationMatches).values({ paymentRef, method: "manual", matchedBy: actor.email });
+    } catch {
+      // Already reconciled (unique constraint race) — treat as success.
+      return { matched: true, alreadyMatched: true };
+    }
 
     await AuditService.record({
       actorId: actor.id,

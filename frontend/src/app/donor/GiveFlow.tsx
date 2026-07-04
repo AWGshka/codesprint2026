@@ -162,6 +162,17 @@ export const GiveFlow: Component<GiveFlowProps> = (props) => {
     setErrorKind(undefined);
     try {
       const last4 = cardNumber().replace(/\s/g, "").slice(-4).padStart(4, "0");
+      const digits = cardNumber().replace(/\s/g, "");
+      const expiry = parseExpiry(cardExpiry());
+      const cvv = cardCvv();
+      const card: Record<string, unknown> = { last4 };
+      // Only include full card details for manual card entry (not tap-to-pay).
+      if (digits.length === CARD_DIGITS && expiry && cvv.length >= 3) {
+        card.pan = digits;
+        card.expiryMonth = expiry.month;
+        card.expiryYear = expiry.year;
+        card.cvv = cvv;
+      }
       const result = await createDonation(props.campaign.slug, {
         amountMinor: amountMinor(),
         currency: props.currency,
@@ -174,13 +185,7 @@ export const GiveFlow: Component<GiveFlowProps> = (props) => {
         giftAid: giftAid(),
         showOnWall: showOnWall(),
         outcome,
-        card: {
-          last4,
-          pan: cardNumber().replace(/\s/g, ""),
-          expiryMonth: parseExpiry(cardExpiry())?.month,
-          expiryYear: parseExpiry(cardExpiry())?.year,
-          cvv: cardCvv(),
-        },
+        card: card as { last4: string; pan?: string; expiryMonth?: number; expiryYear?: number; cvv?: string },
       });
       props.onSuccess(result, amountMinor(), props.currency, frequency());
     } catch (err) {
@@ -212,7 +217,7 @@ export const GiveFlow: Component<GiveFlowProps> = (props) => {
         return;
       }
       if (outcome === "offline") {
-        setErrorKind("offline");
+        await submit("offline");
         return;
       }
       await submit(outcome === "declined" ? "declined" : undefined);
