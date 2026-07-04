@@ -107,6 +107,9 @@ export abstract class DonationService {
           donorName: input.donorName ?? undefined,
           donorEmail: input.donorEmail ?? undefined,
           reference,
+          card: input.card?.pan
+            ? { pan: input.card.pan, expiryMonth: input.card.expiryMonth!, expiryYear: input.card.expiryYear!, cvv: input.card.cvv! }
+            : undefined,
         });
         base.paymentRef = result.paymentId;
       } catch (error) {

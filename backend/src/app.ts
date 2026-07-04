@@ -5,7 +5,6 @@ import { Elysia } from "elysia";
 
 import { env } from "~/env";
 import { ok } from "~/lib/response";
-import { examples } from "~/examples";
 import { audit } from "~/modules/audit";
 import { users } from "~/modules/users";
 import { config } from "~/modules/config";
@@ -35,7 +34,6 @@ export const app = new Elysia()
   .get("/", () => ok({ name: "api", status: "ok" }), { detail: { summary: "Service root" } })
   .get("/me", ({ user }) => ok(user), { auth: true, detail: { summary: "Current user", tags: ["Auth"] } })
   .use(health)
-  .use(examples)
   .group("/api", (app) => app.use(campaigns).use(donations).use(dashboard).use(reconciliation).use(audit).use(users).use(config).use(eventsPlugin));
 
 export type App = typeof app;

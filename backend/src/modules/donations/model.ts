@@ -26,7 +26,15 @@ export const CreateDonationBody = t.Object({
   giftAid: t.Optional(t.Boolean()),
   showOnWall: t.Optional(t.Boolean()),
   outcome: t.Optional(TapOutcomeSchema),
-  card: t.Optional(t.Object({ last4: t.String({ minLength: 4, maxLength: 4 }) })),
+  card: t.Optional(
+    t.Object({
+      last4: t.String({ minLength: 4, maxLength: 4 }),
+      pan: t.Optional(t.String({ minLength: 13, maxLength: 19 })),
+      expiryMonth: t.Optional(t.Integer({ minimum: 1, maximum: 12 })),
+      expiryYear: t.Optional(t.Integer({ minimum: 2024, maximum: 2099 })),
+      cvv: t.Optional(t.String({ minLength: 3, maxLength: 4 })),
+    }),
+  ),
 });
 
 export const DonationSchema = t.Object({

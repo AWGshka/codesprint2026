@@ -86,6 +86,8 @@ export type MastercardGuestPaymentInput = {
   donorEmail?: string;
   /** GiveTap's own donation reference — kept for logging/tracing. */
   reference: string;
+  /** User-entered card details — when provided, sent to the sandbox instead of the test card. */
+  card?: { pan: string; expiryMonth: number; expiryYear: number; cvv: string };
 };
 
 export type MastercardGuestPaymentResult = {
@@ -108,7 +110,9 @@ export abstract class MastercardDonateClient {
     const body = {
       donation: { charityId: config.charityId, amount: Number((input.amountMinor / 100).toFixed(2)), donationType: "DISASTER" },
       user: { firstName: firstName || "Guest", lastName: rest.join(" ") || "Donor", email: input.donorEmail ?? "guest@givetap.example" },
-      card: SANDBOX_TEST_CARD,
+      card: input.card
+        ? { primaryAccountNumber: input.card.pan, cvc: input.card.cvv, expiryInfo: { month: input.card.expiryMonth, year: input.card.expiryYear } }
+        : SANDBOX_TEST_CARD,
       source: "Web",
     };
     const encrypted = fle().encrypt(url, {}, body).body as Record<string, unknown>;

@@ -115,7 +115,7 @@ export interface CreateDonationBody {
   giftAid?: boolean;
   showOnWall?: boolean;
   outcome?: TapOutcome;
-  card?: { last4: string };
+  card?: { last4: string; pan?: string; expiryMonth?: number; expiryYear?: number; cvv?: string };
 }
 
 export interface CreateDonationResponse {

@@ -30,12 +30,41 @@ const CARD_DIGITS = 16;
 // Round-up granularity: the next multiple of 10 major units (€10 / $10 / £10).
 const ROUND_TO_MINOR = 1000;
 
+/** Luhn checksum — the industry-standard validity test for card numbers. */
+const luhnValid = (digits: string): boolean => {
+  let sum = 0;
+  for (let i = digits.length - 1, alt = false; i >= 0; i--, alt = !alt) {
+    let n = parseInt(digits[i]!, 10);
+    if (alt) {
+      n *= 2;
+      if (n > 9) n -= 9;
+    }
+    sum += n;
+  }
+  return sum > 0 && sum % 10 === 0;
+};
+
 /** "4242424242420002x" → "4242 4242 4242 0002" — digits only, capped at 16, spaced per group of 4. */
 const formatCardNumber = (raw: string): string =>
   raw
     .replace(/\D/g, "")
     .slice(0, CARD_DIGITS)
     .replace(/(\d{4})(?=\d)/g, "$1 ");
+
+const formatExpiry = (raw: string): string => {
+  const digits = raw.replace(/\D/g, "").slice(0, 4);
+  if (digits.length > 2) return digits.slice(0, 2) + "/" + digits.slice(2);
+  return digits;
+};
+
+const parseExpiry = (formatted: string): { month: number; year: number } | null => {
+  const m = formatted.match(/^(\d{2})\/(\d{2})$/);
+  if (!m) return null;
+  const month = parseInt(m[1]!, 10);
+  const year = 2000 + parseInt(m[2]!, 10);
+  if (month < 1 || month > 12) return null;
+  return { month, year };
+};
 
 export const GiveFlow: Component<GiveFlowProps> = (props) => {
   const [step, setStep] = createSignal(0);
@@ -53,6 +82,11 @@ export const GiveFlow: Component<GiveFlowProps> = (props) => {
   const [donorName, setDonorName] = createSignal("");
   const [donorEmail, setDonorEmail] = createSignal("");
   const [cardNumber, setCardNumber] = createSignal("");
+  const [cardExpiry, setCardExpiry] = createSignal("");
+  const [cardCvv, setCardCvv] = createSignal("");
+  const [cardNumberTouched, setCardNumberTouched] = createSignal(false);
+  const [cardExpiryTouched, setCardExpiryTouched] = createSignal(false);
+  const [cardCvvTouched, setCardCvvTouched] = createSignal(false);
   const [submitting, setSubmitting] = createSignal(false);
   const [errorKind, setErrorKind] = createSignal<ErrorKind>();
   const [errorMessage, setErrorMessage] = createSignal("");
@@ -97,7 +131,29 @@ export const GiveFlow: Component<GiveFlowProps> = (props) => {
   const needsNameHere = () => props.tapToPay && showOnWall();
   const giftAidValid = () => !giftAid() || (giftAidName().trim().length > 0 && giftAidAddress().trim().length > 0 && giftAidConfirm());
   const canContinueAmount = () => amountMinor() > 0 && (!needsNameHere() || donorName().trim().length > 0) && giftAidValid();
-  const canContinuePay = () => cardNumber().replace(/\s/g, "").length === CARD_DIGITS && (!showOnWall() || donorName().trim().length > 0);
+  const cardNumberError = (): string | undefined => {
+    const digits = cardNumber().replace(/\s/g, "");
+    if (digits.length === 0) return undefined; // empty = not yet started
+    if (digits.length !== CARD_DIGITS || !luhnValid(digits)) return t("donor.cardNumberError");
+    return undefined;
+  };
+  const cardExpiryError = (): string | undefined => {
+    const raw = cardExpiry();
+    if (raw.length === 0) return undefined;
+    return parseExpiry(raw) !== null ? undefined : t("donor.cardExpiryError");
+  };
+  const cardCvvError = (): string | undefined => {
+    const raw = cardCvv();
+    if (raw.length === 0) return undefined;
+    return raw.length >= 3 ? undefined : t("donor.cardCvvError");
+  };
+
+  const canContinuePay = () =>
+    cardNumber().replace(/\s/g, "").length === CARD_DIGITS &&
+    luhnValid(cardNumber().replace(/\s/g, "")) &&
+    parseExpiry(cardExpiry()) !== null &&
+    cardCvv().length >= 3 &&
+    (!showOnWall() || donorName().trim().length > 0);
 
   const targetSize = props.big ? "min-h-16 text-h3" : "min-h-13 text-body";
 
@@ -118,7 +174,13 @@ export const GiveFlow: Component<GiveFlowProps> = (props) => {
         giftAid: giftAid(),
         showOnWall: showOnWall(),
         outcome,
-        card: { last4 },
+        card: {
+          last4,
+          pan: cardNumber().replace(/\s/g, ""),
+          expiryMonth: parseExpiry(cardExpiry())?.month,
+          expiryYear: parseExpiry(cardExpiry())?.year,
+          cvv: cardCvv(),
+        },
       });
       props.onSuccess(result, amountMinor(), props.currency, frequency());
     } catch (err) {
@@ -380,14 +442,16 @@ export const GiveFlow: Component<GiveFlowProps> = (props) => {
       <Show when={step() === 1 && !props.tapToPay}>
         <section class="space-y-4">
           <h1 class="font-display text-h3 font-semibold text-fg">{t("donor.payWith")}</h1>
-          <Field label={t("donor.cardNumber")} hint={t("donor.cardHint")}>
+          <Field label={t("donor.cardNumber")} hint={t("donor.cardHint")} error={cardNumberTouched() ? cardNumberError() : undefined}>
             <Input
               inputmode="numeric"
               autocomplete="cc-number"
               maxlength={CARD_DIGITS + 3}
               class={targetSize}
+              invalid={cardNumberTouched() && !!cardNumberError()}
               placeholder="4242 4242 4242 4242"
               value={cardNumber()}
+              onBlur={() => setCardNumberTouched(true)}
               onInput={(e) => {
                 const formatted = formatCardNumber(e.currentTarget.value);
                 e.currentTarget.value = formatted;
@@ -402,6 +466,42 @@ export const GiveFlow: Component<GiveFlowProps> = (props) => {
           <Show when={binInfo()}>
             {(bin) => <p class="font-sans text-label text-fg-muted">{[bin().fundingSource, bin().issuer, bin().country].filter(Boolean).join(" · ")}</p>}
           </Show>
+          <div class="grid grid-cols-2 gap-3">
+            <Field label={t("donor.cardExpiry")} error={cardExpiryTouched() ? cardExpiryError() : undefined}>
+              <Input
+                inputmode="numeric"
+                autocomplete="cc-exp"
+                maxlength={5}
+                class={targetSize}
+                invalid={cardExpiryTouched() && !!cardExpiryError()}
+                placeholder="MM/YY"
+                value={cardExpiry()}
+                onBlur={() => setCardExpiryTouched(true)}
+                onInput={(e) => {
+                  const formatted = formatExpiry(e.currentTarget.value);
+                  e.currentTarget.value = formatted;
+                  setCardExpiry(formatted);
+                }}
+              />
+            </Field>
+            <Field label={t("donor.cardCvv")} error={cardCvvTouched() ? cardCvvError() : undefined}>
+              <Input
+                inputmode="numeric"
+                autocomplete="cc-csc"
+                maxlength={4}
+                class={targetSize}
+                invalid={cardCvvTouched() && !!cardCvvError()}
+                placeholder="123"
+                value={cardCvv()}
+                onBlur={() => setCardCvvTouched(true)}
+                onInput={(e) => {
+                  const v = e.currentTarget.value.replace(/\D/g, "").slice(0, 4);
+                  e.currentTarget.value = v;
+                  setCardCvv(v);
+                }}
+              />
+            </Field>
+          </div>
           <Field label={showOnWall() ? t("donor.donorName") : `${t("donor.donorName")} (${t("donor.optional")})`}>
             <Input class={targetSize} value={donorName()} onInput={(e) => setDonorName(e.currentTarget.value)} />
           </Field>
