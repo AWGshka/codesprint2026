@@ -166,6 +166,23 @@ const CampaignFormPage: Component = () => {
                 </div>
               </Field>
 
+              <Field label={t("admin.logo")} hint={t("admin.logoHint")}>
+                <div class="flex items-center gap-3">
+                  <Input
+                    class="max-w-24"
+                    maxlength={2}
+                    value={form().logoUrl ?? ""}
+                    onInput={(e) => setForm({ ...form(), logoUrl: e.currentTarget.value || undefined })}
+                    placeholder="🌍"
+                  />
+                  <span
+                    class="inline-flex size-10 items-center justify-center rounded-lg text-base font-bold"
+                    style={{ background: form().brandColor, color: "#fff" }}>
+                    {form().logoUrl || form().name.slice(0, 2).toUpperCase() || "GT"}
+                  </span>
+                </div>
+              </Field>
+
               <div class="grid grid-cols-2 gap-3">
                 <Field label={t("admin.startDate")}>
                   <Input type="date" value={startsAt()} onInput={(e) => setStartsAt(e.currentTarget.value)} />

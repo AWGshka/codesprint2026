@@ -160,7 +160,7 @@ const DashboardPage: Component = () => {
                 <Chart type="bar" data={byCampaignChartData()} options={{ plugins: { legend: { display: false } } }} class="h-32" />
               </Card>
               <Card padding="md" class="flex items-center gap-4">
-                <Chart type="doughnut" data={byCurrencyChartData()} options={{ plugins: { legend: { display: false } } }} class="!h-20 !w-20" height={80} />
+                <Chart type="doughnut" data={byCurrencyChartData()} options={{ plugins: { legend: { display: false } } }} class="h-20! w-20!" height={80} />
                 <div>
                   <p class="font-sans text-fs-sm font-semibold text-fg">{t("dashboard.byCurrency")}</p>
                   <For each={stats()?.totalsByCurrency ?? []}>

@@ -26,4 +26,5 @@ export {
   LogOut as SignOutIcon,
   PanelLeftClose as CollapseIcon,
   PanelLeftOpen as ExpandIcon,
+  CircleQuestionMark as QuestionIcon,
 } from "lucide-solid";

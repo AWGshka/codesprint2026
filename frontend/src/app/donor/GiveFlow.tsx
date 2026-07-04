@@ -46,6 +46,9 @@ export const GiveFlow: Component<GiveFlowProps> = (props) => {
   const [frequency, setFrequency] = createSignal<DonationFrequency>(props.campaign.frequencies[0] ?? "one_time");
   const [roundUp, setRoundUp] = createSignal(false);
   const [giftAid, setGiftAid] = createSignal(false);
+  const [giftAidName, setGiftAidName] = createSignal("");
+  const [giftAidAddress, setGiftAidAddress] = createSignal("");
+  const [giftAidConfirm, setGiftAidConfirm] = createSignal(false);
   const [showOnWall, setShowOnWall] = createSignal(false);
   const [donorName, setDonorName] = createSignal("");
   const [donorEmail, setDonorEmail] = createSignal("");
@@ -92,7 +95,8 @@ export const GiveFlow: Component<GiveFlowProps> = (props) => {
   // The supporters wall shows names — opting in needs one. On the tap flow the
   // name is captured right here in step 0; the card flow captures it in step 1.
   const needsNameHere = () => props.tapToPay && showOnWall();
-  const canContinueAmount = () => amountMinor() > 0 && (!needsNameHere() || donorName().trim().length > 0);
+  const giftAidValid = () => !giftAid() || (giftAidName().trim().length > 0 && giftAidAddress().trim().length > 0 && giftAidConfirm());
+  const canContinueAmount = () => amountMinor() > 0 && (!needsNameHere() || donorName().trim().length > 0) && giftAidValid();
   const canContinuePay = () => cardNumber().replace(/\s/g, "").length === CARD_DIGITS && (!showOnWall() || donorName().trim().length > 0);
 
   const targetSize = props.big ? "min-h-16 text-h3" : "min-h-13 text-body";
@@ -270,6 +274,26 @@ export const GiveFlow: Component<GiveFlowProps> = (props) => {
               <Checkbox checked={giftAid()} onChange={setGiftAid} label={t("donor.giftAidLabel")} />
               <p class="pl-7 font-sans text-label text-fg-muted">{t("donor.giftAidBody")}</p>
             </div>
+            <Show when={giftAid()}>
+              <div class="space-y-3 pl-7">
+                <Field label={t("donor.giftAidFullName")}>
+                  <Input
+                    class={props.big ? "min-h-13 text-body" : "min-h-10 text-fs-sm"}
+                    value={giftAidName()}
+                    onInput={(e) => setGiftAidName(e.currentTarget.value)}
+                  />
+                </Field>
+                <Field label={t("donor.giftAidAddress")}>
+                  <Input
+                    class={props.big ? "min-h-13 text-body" : "min-h-10 text-fs-sm"}
+                    value={giftAidAddress()}
+                    onInput={(e) => setGiftAidAddress(e.currentTarget.value)}
+                    placeholder={t("donor.giftAidAddressPlaceholder")}
+                  />
+                </Field>
+                <Checkbox checked={giftAidConfirm()} onChange={setGiftAidConfirm} label={t("donor.giftAidConfirmLabel")} />
+              </div>
+            </Show>
             <Show when={needsNameHere()}>
               <Field label={t("donor.donorName")}>
                 <Input class={targetSize} value={donorName()} onInput={(e) => setDonorName(e.currentTarget.value)} />
@@ -421,6 +445,14 @@ export const GiveFlow: Component<GiveFlowProps> = (props) => {
               <div class="flex justify-between">
                 <dt class="text-fg-muted">{t("donor.giftAidShort")}</dt>
                 <dd class="text-fg">{t("common.yes")}</dd>
+              </div>
+              <div class="flex justify-between">
+                <dt class="text-fg-muted">{t("donor.giftAidFullName")}</dt>
+                <dd class="min-w-0 truncate text-fg">{giftAidName()}</dd>
+              </div>
+              <div class="flex justify-between">
+                <dt class="text-fg-muted">{t("donor.giftAidAddress")}</dt>
+                <dd class="min-w-0 truncate text-fg">{giftAidAddress()}</dd>
               </div>
             </Show>
             <Show when={showOnWall()}>

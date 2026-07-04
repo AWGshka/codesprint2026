@@ -49,7 +49,9 @@ const KioskPage: Component = () => {
           <div class="flex min-h-screen flex-col bg-surface" style={{ "--brand": c().brandColor, "--brand-fg": readableForeground(c().brandColor) }}>
             <header class="space-y-3 border-b border-border bg-surface-raised px-6 py-4">
               <div class="flex items-center justify-center gap-2">
-                <span class="inline-flex size-8 items-center justify-center rounded-md bg-brand text-sm font-bold text-brand-fg">GT</span>
+                <span class="inline-flex size-8 items-center justify-center rounded-md bg-brand text-sm font-bold text-brand-fg">
+                  {c().logoUrl || c().name.slice(0, 2).toUpperCase()}
+                </span>
                 <span class="font-display text-h2 font-semibold text-fg">{c().name}</span>
                 <span class="hidden rounded-full border border-border px-2.5 py-0.5 font-sans text-label text-fg-muted sm:inline">{c().cause}</span>
                 <span class="ml-auto">

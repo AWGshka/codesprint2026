@@ -49,7 +49,13 @@ const DiscoverPage: Component = () => {
                   return (
                     <A href={`/c/${c.slug}`}>
                       <Card padding="none" class="h-full overflow-hidden transition-shadow hover:shadow-e2">
-                        <div class="h-24" style={{ background: `linear-gradient(160deg, ${c.brandColor}, color-mix(in srgb, ${c.brandColor} 55%, black))` }} />
+                        <div
+                          class="relative h-24"
+                          style={{ background: `linear-gradient(160deg, ${c.brandColor}, color-mix(in srgb, ${c.brandColor} 55%, black))` }}>
+                          <span class="absolute bottom-3 left-3 inline-flex size-8 items-center justify-center rounded-lg bg-white/20 text-sm font-bold text-white backdrop-blur-sm">
+                            {c.logoUrl || c.name.slice(0, 2).toUpperCase()}
+                          </span>
+                        </div>
                         <div class="space-y-2 p-4">
                           <p class="font-sans text-label uppercase tracking-wide text-fg-muted">{c.cause}</p>
                           <h2 class="font-display text-h3 font-semibold text-fg">{c.name}</h2>
